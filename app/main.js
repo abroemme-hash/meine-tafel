@@ -7,7 +7,7 @@ const fs = require('fs');
 function parseArgs(argv) {
   const o = {};
   for (let i = 0; i < argv.length; i++) {
-    const m = /^--(klasse|thema|namen-datei|oeffne)$/.exec(argv[i]);
+    const m = /^--(klasse|thema|namen-datei|phasen-datei|oeffne)$/.exec(argv[i]);
     if (m && i + 1 < argv.length) o[m[1]] = argv[++i];
   }
   return o;
@@ -21,8 +21,19 @@ let win, ready = false, pending = parseArgs(process.argv.slice(1));
 
 // Optionen an die Seite übergeben (Klassenliste, Thema, Tafel-Datei)
 async function apply(o) {
-  if (!win || !o || !(o.klasse || o.thema || o['namen-datei'] || o.oeffne)) return;
+  if (!win || !o || !(o.klasse || o.thema || o['namen-datei'] || o['phasen-datei'] || o.oeffne)) return;
   const data = { klasse: o.klasse || '', thema: o.thema || '' };
+  if (o['phasen-datei']) {
+    try {
+      const f = o['phasen-datei'];
+      if (path.basename(f).startsWith('meinetafel-')) {
+        try {
+          const l = JSON.parse(fs.readFileSync(f, 'utf8').replace(/^﻿/, ''));
+          if (Array.isArray(l)) data.phasen = l.map(p => [String(p[0] || ''), String(p[1] || '')]);
+        } finally { try { fs.unlinkSync(f); } catch (e) {} }
+      }
+    } catch (e) {}
+  }
   if (o['namen-datei']) {
     try {
       const f = o['namen-datei'];
