@@ -33,6 +33,7 @@ button b{font-size:17px;font-weight:700;line-height:1;font-variant-numeric:tabul
 @media(hover:hover){button:hover:not(:disabled):not(.on){background:var(--hover)}}
 button:active:not(:disabled){transform:scale(.94)}
 button:disabled{opacity:.3;cursor:default}
+#tinfo:disabled{opacity:1}
 button:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
 button.on{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 6px 16px rgba(79,70,229,.45)}
 button.on small{color:rgba(255,255,255,.85)}
@@ -61,6 +62,8 @@ body.top .pop{bottom:auto;top:calc(100% + 12px)}
 #panel .th{position:relative;border:3px solid transparent;border-radius:11px;cursor:pointer;background:#fff;line-height:0;overflow:hidden;flex:none}
 #panel .th.cur{border-color:#a5b4fc;box-shadow:0 0 0 2px var(--accent)}
 #panel .th canvas{width:100%;height:auto;display:block}
+#panel .th .x{position:absolute;right:5px;top:5px;min-width:0;min-height:0;width:28px;height:28px;padding:0;border-radius:50%;background:rgba(13,17,31,.85);color:#fff;line-height:1}
+#panel .th .x .ic{width:14px;height:14px}
 #panel .th b{position:absolute;left:6px;top:6px;font-size:12px;background:rgba(13,17,31,.8);color:#fff;border-radius:999px;padding:2px 8px;line-height:1.3;min-width:0}
 
 #ruler{position:absolute;left:140px;top:140px;width:756px;height:72px;background:linear-gradient(180deg,rgba(255,246,196,.94),rgba(255,226,120,.9));border:1px solid rgba(120,90,10,.55);border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.35);display:none;z-index:8;cursor:grab;touch-action:none;transform-origin:50% 50%}
@@ -72,7 +75,7 @@ body.top .pop{bottom:auto;top:calc(100% + 12px)}
 #curtain .h{position:absolute;left:0;right:0;bottom:-20px;height:40px;display:flex;justify-content:center;align-items:center;cursor:ns-resize;touch-action:none}
 #curtain .h span{width:120px;height:14px;border-radius:7px;background:#fff;box-shadow:0 3px 10px rgba(0,0,0,.4)}
 
-#timer{position:absolute;right:28px;top:28px;background:rgba(13,17,31,.82);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:26px;padding:16px 18px;display:none;z-index:11;text-align:center;box-shadow:var(--shadow)}
+#timer{position:absolute;right:28px;top:72px;background:rgba(13,17,31,.82);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:26px;padding:16px 18px;display:none;z-index:11;text-align:center;box-shadow:var(--shadow)}
 #timer .t{font-size:84px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.02em}
 #timer.end .t{color:#ff6b81;animation:bl .6s infinite alternate}
 @keyframes bl{to{opacity:.3}}
@@ -110,6 +113,13 @@ body.top .pop{bottom:auto;top:calc(100% + 12px)}
     <button id="undo"><i data-ic="undo"></i><small>Zurück</small></button>
     <button id="redo"><i data-ic="redo"></i><small>Vor</small></button>
   </div>
+  <div class="grp" id="tblgrp" style="display:none">
+    <button id="tinfo" disabled><b id="tinfot">4×3</b><small>Zeilen×Spalten</small></button>
+    <button id="trm"><b>−</b><small>Zeile</small></button>
+    <button id="trp"><b>+</b><small>Zeile</small></button>
+    <button id="tkm"><b>−</b><small>Spalte</small></button>
+    <button id="tkp"><b>+</b><small>Spalte</small></button>
+  </div>
   <div class="grp" id="selgrp" style="display:none">
     <button id="sdel"><i data-ic="trash"></i><small>Löschen</small></button>
     <button id="sbig"><i data-ic="plus"></i><small>Größer</small></button>
@@ -121,6 +131,7 @@ body.top .pop{bottom:auto;top:calc(100% + 12px)}
     <button id="pnum" data-pop="pgpop"><b id="pnumt">1 / 1</b><small>Seiten</small></button>
     <button id="pnext" aria-label="Nächste Seite"><i data-ic="chevR"></i></button>
     <button id="padd"><i data-ic="plus"></i><small>Neue Seite</small></button>
+    <button id="pdel2"><i data-ic="trash"></i><small>Seite löschen</small></button>
   </div>
   <div class="grp">
     <button data-pop="aidpop"><i data-ic="wrench"></i><small>Hilfsmittel</small></button>
@@ -176,6 +187,7 @@ text:'<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"
 image:'<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
 rect:'<rect width="18" height="18" x="3" y="3" rx="2"/>',
 ellipse:'<circle cx="12" cy="12" r="9"/>',
+table:'<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M12 3v18"/>',
 line:'<path d="M5 19 19 5"/>',
 arrow:'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
 undo:'<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>',
@@ -209,7 +221,7 @@ rotR:'<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 
 const ic=(n,s=24)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||''}</svg>`;
 const hydrate=()=>document.querySelectorAll('i[data-ic]').forEach(e=>e.outerHTML=ic(e.dataset.ic));
 let S={theme:'white',cur:0,pages:[],images:{}};
-let tool='pen',color='#111111',sizeIdx=1,sel=null,draft=null,scale=1,dirty=true;
+let tool='pen',color='#111111',sizeIdx=1,sel=null,draft=null,scale=1,dirty=true,tblR=4,tblK=3;
 const PEN=[4,9,18], TXT=[40,64,100];
 const COLORS=['#111111','#ffffff','#1f6feb','#e03131','#2f9e44','#f2c200','#f08c00','#9c36b5'];
 const BGS=[['plain','Leer'],['grid','Kariert'],['lined','Liniert'],['lines4','Schreib-lineatur'],['numline','Zahlen-strahl'],['hundred','Hunderter-feld'],['coords','Koordinaten-system']];
@@ -218,7 +230,8 @@ const BGS=[['plain','Leer'],['grid','Kariert'],['lined','Liniert'],['lines4','Sc
 let tt;function toast(m,ms=2500){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(tt);tt=setTimeout(()=>t.style.display='none',ms)}
 
 /* ---------- Seiten & Verlauf ---------- */
-function mkPage(bg='plain',objs=[],bgImg=null){const p={bg,bgImg,objs,hist:[JSON.stringify(objs)],hi:0};return p}
+const todayStr=()=>new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+function mkPage(bg='plain',objs=[],bgImg=null,date=null){const p={bg,bgImg,objs,date:date||todayStr(),hist:[JSON.stringify(objs)],hi:0};return p}
 const P=()=>S.pages[S.cur];
 function snap(){const p=P();p.hist.length=p.hi+1;p.hist.push(JSON.stringify(p.objs));if(p.hist.length>150)p.hist.shift();p.hi=p.hist.length-1;changed()}
 function undo(){const p=P();if(p.hi>0){p.hi--;p.objs=JSON.parse(p.hist[p.hi]);sel=null;changed(true)}}
@@ -273,6 +286,12 @@ function drawObj(c,o){
     c.beginPath();c.moveTo(o.x1,o.y1);c.lineTo(o.x2,o.y2);c.stroke();
     if(o.t==='arrow'){const a=Math.atan2(o.y2-o.y1,o.x2-o.x1),h=Math.max(24,o.w*4);c.beginPath();c.moveTo(o.x2,o.y2);c.lineTo(o.x2-h*Math.cos(a-.45),o.y2-h*Math.sin(a-.45));c.moveTo(o.x2,o.y2);c.lineTo(o.x2-h*Math.cos(a+.45),o.y2-h*Math.sin(a+.45));c.stroke()}
   }else if(o.t==='rect'){c.strokeRect(Math.min(o.x1,o.x2),Math.min(o.y1,o.y2),Math.abs(o.x2-o.x1),Math.abs(o.y2-o.y1))}
+  else if(o.t==='table'){
+    const x=Math.min(o.x1,o.x2),y=Math.min(o.y1,o.y2),w=Math.abs(o.x2-o.x1),h=Math.abs(o.y2-o.y1);
+    c.strokeRect(x,y,w,h);c.beginPath();
+    for(let i=1;i<o.r;i++){c.moveTo(x,y+h*i/o.r);c.lineTo(x+w,y+h*i/o.r)}
+    for(let i=1;i<o.k;i++){c.moveTo(x+w*i/o.k,y);c.lineTo(x+w*i/o.k,y+h)}
+    c.stroke()}
   else if(o.t==='ellipse'){c.beginPath();c.ellipse((o.x1+o.x2)/2,(o.y1+o.y2)/2,Math.abs(o.x2-o.x1)/2||1,Math.abs(o.y2-o.y1)/2||1,0,0,7);c.stroke()}
   else if(o.t==='text'){c.font=`${o.size}px "Segoe UI",Arial,sans-serif`;c.textBaseline='top';o.s.split('\n').forEach((l,i)=>c.fillText(l,o.x,o.y+i*o.size*1.25))}
   else if(o.t==='img'){const im=getImg(o.id);if(im)c.drawImage(im,o.x,o.y,o.w,o.h);else{c.strokeRect(o.x,o.y,o.w,o.h)}}
@@ -291,6 +310,11 @@ function render(c,page,withSel){
   c.fillStyle=board?'#1f4d3a':'#ffffff';c.fillRect(0,0,W,H);
   drawBg(c,page.bg,board);
   if(page.bgImg){const im=getImg(page.bgImg);if(im){const r=Math.min(W/im.naturalWidth,H/im.naturalHeight),w=im.naturalWidth*r,h=im.naturalHeight*r;c.drawImage(im,(W-w)/2,(H-h)/2,w,h)}}
+  // Datum (und ggf. Klasse · Thema) oben auf jeder Seite
+  c.save();c.fillStyle=board?'rgba(255,255,255,.92)':'#1e2433';c.textBaseline='top';
+  c.font='700 64px "Segoe UI",Arial,sans-serif';c.textAlign='right';c.fillText(page.date||todayStr(),W-48,30);
+  if(window.__kopfText){c.font='600 48px "Segoe UI",Arial,sans-serif';c.textAlign='left';c.globalAlpha=.8;c.fillText(window.__kopfText,48,38)}
+  c.restore();
   page.objs.forEach(o=>drawObj(c,o));
   if(withSel&&draft)drawObj(c,draft);
   if(withSel&&sel!=null&&page.objs[sel]){const b=bbox(page.objs[sel]);c.save();c.strokeStyle='#1f6feb';c.lineWidth=3;c.setLineDash([12,8]);c.strokeRect(b[0]-8,b[1]-8,b[2]-b[0]+16,b[3]-b[1]+16);c.restore()}
@@ -328,7 +352,7 @@ cv.addEventListener('pointerdown',e=>{
   if(tool==='eraser'){eraseAt(p);return}
   const w=tool==='hl'?PEN[sizeIdx]*3.5:PEN[sizeIdx];
   if(tool==='pen'||tool==='hl')draft={t:'path',pts:[[p.x,p.y]],c:color,w,hl:tool==='hl'};
-  else draft={t:tool,x1:p.x,y1:p.y,x2:p.x,y2:p.y,c:color,w:PEN[sizeIdx]};
+  else{draft={t:tool,x1:p.x,y1:p.y,x2:p.x,y2:p.y,c:color,w:PEN[sizeIdx]};if(tool==='table'){draft.r=tblR;draft.k=tblK}}
   dirty=true;
 });
 cv.addEventListener('pointermove',e=>{
@@ -349,7 +373,7 @@ function up(e){
   else if(draft){
     const d=draft;draft=null;
     const tiny=d.t!=='path'&&Math.hypot(d.x2-d.x1,d.y2-d.y1)<6;
-    if(!tiny){P().objs.push(d);snap()}
+    if(!tiny){P().objs.push(d);if(d.t==='table'){sel=P().objs.length-1;tool='select';toolsUI()}snap()}
   }
   dirty=true;
 }
@@ -417,13 +441,13 @@ async function kvGet(k){const d=await idb();return new Promise((res,rej)=>{const
 function serialize(){
   const used=new Set();S.pages.forEach(p=>{if(p.bgImg)used.add(p.bgImg);p.objs.forEach(o=>o.t==='img'&&used.add(o.id))});
   const images={};used.forEach(id=>images[id]=S.images[id]);
-  return JSON.stringify({v:1,theme:S.theme,cur:S.cur,images,pages:S.pages.map(p=>({bg:p.bg,bgImg:p.bgImg,objs:p.objs}))})}
+  return JSON.stringify({v:1,theme:S.theme,cur:S.cur,images,pages:S.pages.map(p=>({bg:p.bg,bgImg:p.bgImg,date:p.date,objs:p.objs}))})}
 function restore(json){
   const d=typeof json==='string'?JSON.parse(json):json;
   if(!d||!Array.isArray(d.pages)||!d.pages.length)throw new Error('Ungültige Datei');
   S.theme=d.theme==='board'?'board':'white';S.images=d.images||{};
   Object.keys(imgCache).forEach(k=>delete imgCache[k]);
-  S.pages=d.pages.map(p=>mkPage(p.bg||'plain',Array.isArray(p.objs)?p.objs:[],p.bgImg||null));
+  S.pages=d.pages.map(p=>mkPage(p.bg||'plain',Array.isArray(p.objs)?p.objs:[],p.bgImg||null,p.date||null));
   S.cur=Math.min(d.cur||0,S.pages.length-1);sel=null;draft=null;applyTheme();changed()}
 let st;function scheduleSave(){clearTimeout(st);st=setTimeout(()=>kvSet('state',serialize()).catch(()=>toast('Automatisches Speichern nicht möglich')),700)}
 function download(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
@@ -444,7 +468,7 @@ $('#ffull').onclick=()=>{try{document.fullscreenElement?document.exitFullscreen(
 
 /* ---------- Oberfläche ---------- */
 const TOOLS=[['select','select','Auswahl'],['pen','pen','Stift'],['hl','hl','Marker'],['eraser','eraser','Radierer'],['shape','shape','Formen'],['text','text','Text'],['img','image','Bild']];
-const SHAPES=[['rect','rect','Rechteck'],['ellipse','ellipse','Kreis'],['line','line','Linie'],['arrow','arrow','Pfeil']];
+const SHAPES=[['rect','rect','Rechteck'],['ellipse','ellipse','Kreis'],['line','line','Linie'],['arrow','arrow','Pfeil'],['table','table','Tabelle']];
 function buildBar(){
   $('#tools').innerHTML=TOOLS.map(([id,icon,l])=>`<button data-tool="${id}">${ic(icon)}<small>${l}</small></button>`).join('');
   $('#colors').innerHTML=COLORS.map(c=>`<button class="sw" data-color="${c}" style="background:${c}" aria-label="Farbe ${c}"></button>`).join('');
@@ -465,6 +489,9 @@ function ui(){
   $('#pprev').disabled=S.cur===0;$('#pnext').disabled=S.cur>=S.pages.length-1;
   $('#undo').disabled=p.hi<=0;$('#redo').disabled=p.hi>=p.hist.length-1;
   $('#selgrp').style.display=sel!=null?'flex':'none';
+  const so=sel!=null?p.objs[sel]:null,st=so&&so.t==='table'?so:null;
+  $('#tblgrp').style.display=(tool==='table'||st)?'flex':'none';
+  $('#tinfot').textContent=(st?st.r:tblR)+'×'+(st?st.k:tblK);
   document.querySelectorAll('[data-bg]').forEach(b=>b.classList.toggle('on',b.dataset.bg===p.bg));
   dirty=true;
 }
@@ -481,9 +508,16 @@ document.addEventListener('click',e=>{
   if(t.dataset.size){sizeIdx=+t.dataset.size;toolsUI();return}
   if(t.dataset.bg){P().bg=t.dataset.bg;snap();return}
 });
+function tblAdj(dr,dk){
+  const so=sel!=null?P().objs[sel]:null;
+  if(tool==='select'&&so&&so.t==='table'){so.r=Math.max(1,Math.min(20,so.r+dr));so.k=Math.max(1,Math.min(12,so.k+dk));snap()}
+  else{tblR=Math.max(1,Math.min(20,tblR+dr));tblK=Math.max(1,Math.min(12,tblK+dk));ui()}
+}
+$('#trm').onclick=()=>tblAdj(-1,0);$('#trp').onclick=()=>tblAdj(1,0);$('#tkm').onclick=()=>tblAdj(0,-1);$('#tkp').onclick=()=>tblAdj(0,1);
 $('#undo').onclick=undo;$('#redo').onclick=redo;
 $('#pprev').onclick=()=>setPage(S.cur-1);$('#pnext').onclick=()=>setPage(S.cur+1);$('#padd').onclick=()=>addPage();
-$('#pdel').onclick=()=>{hideAllPops();if(confirm('Diese Seite löschen?'))delPage()};
+$('#pdel').onclick=()=>{hideAllPops();askDelPage(S.cur)};
+$('#pdel2').onclick=()=>{hideAllPops();askDelPage(S.cur)};
 $('#pclr').onclick=()=>{hideAllPops();P().objs=[];P().bgImg=null;sel=null;snap()};
 $('#sdel').onclick=()=>{if(sel!=null){P().objs.splice(sel,1);sel=null;snap()}};
 $('#sbig').onclick=()=>{if(sel!=null){scaleObj(P().objs[sel],1.15);snap()}};
@@ -504,7 +538,16 @@ function buildThumbs(){
   S.pages.forEach((p,i)=>{
     const d=document.createElement('div');d.className='th'+(i===S.cur?' cur':'');
     const c=document.createElement('canvas');c.width=W/6;c.height=H/6;const x=c.getContext('2d');x.save();x.scale(1/6,1/6);render(x,p,false);x.restore();
-    const b=document.createElement('b');b.textContent=i+1;d.append(c,b);d.onclick=()=>setPage(i);pn.appendChild(d)});
+    const b=document.createElement('b');b.textContent=i+1;
+    const x2=document.createElement('button');x2.className='x';x2.title='Seite löschen';x2.setAttribute('aria-label','Seite '+(i+1)+' löschen');x2.innerHTML=ic('close',14);
+    x2.onclick=e=>{e.stopPropagation();askDelPage(i)};
+    d.append(c,b,x2);d.onclick=()=>setPage(i);pn.appendChild(d)});
+}
+function askDelPage(i){
+  const only=S.pages.length===1;
+  if(!confirm(only?'Die einzige Seite kann nicht entfernt werden. Inhalt der Seite leeren?':`Seite ${i+1} von ${S.pages.length} löschen?`))return;
+  S.cur=i;sel=null;delPage();
+  if($('#panel').classList.contains('show'))buildThumbs();
 }
 $('#pthumbs').onclick=()=>{hideAllPops();const pn=$('#panel');pn.classList.toggle('show');if(pn.classList.contains('show'))buildThumbs()};
 
@@ -570,5 +613,6 @@ addEventListener('keydown',e=>{
   window.__tafel={S,P,get tool(){return tool},set tool(v){tool=v;toolsUI()}};
 })();
 </script>
+<script src="widgets.js"></script>
 </body>
 </html>
