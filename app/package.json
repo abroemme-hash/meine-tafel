@@ -1,0 +1,43 @@
+{
+  "name": "meine-tafel",
+  "version": "1.0.0",
+  "description": "Meine digitale Tafel",
+  "main": "main.js",
+  "author": "Meine Tafel",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "sync": "node sync.js",
+    "start": "node sync.js && electron .",
+    "dist": "node sync.js && electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "de.meinetafel.app",
+    "productName": "Meine Tafel",
+    "directories": {
+      "output": "../dist"
+    },
+    "files": [
+      "main.js",
+      "icon.png",
+      "www/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icon.png",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Meine Tafel"
+    }
+  },
+  "devDependencies": {
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0"
+  }
+}
