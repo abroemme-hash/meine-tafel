@@ -28,18 +28,21 @@ body.theme-board{--w-bg:rgba(13,17,31,.93);--w-fg:#ffffff;--w-mute:#aab2cc;--w-s
 .wg .wh .wx{background:transparent}
 .wg .wh .ei{font-size:20px;line-height:1}
 /* Menü: Suche, Reiter, Kacheln, Anordnungen */
-#widpop{width:min(700px,calc(100vw - 140px));flex-direction:column;align-items:stretch;gap:10px;padding:14px;background:#fff}
+#widpop{width:min(700px,calc(100vw - 140px));max-height:var(--pmh,calc(100vh - 24px));overflow:hidden;flex-direction:column;align-items:stretch;gap:10px;padding:14px;background:#fff}
 html.surround-dark #widpop{background:#1e2234}
 #widpop.show{display:flex}
 #widpop .wsearch{position:relative}
 #widpop .wsearch svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);opacity:.5;pointer-events:none}
 #widpop .ws{width:100%;font:inherit;font-size:15px;border:1px solid var(--line);background:var(--hover);color:var(--ink);border-radius:14px;padding:11px 14px 11px 40px;outline:none;-webkit-user-select:text;user-select:text}
 #widpop .ws:focus{border-color:var(--accent)}
-#widpop .wtabs{display:flex;flex-wrap:wrap;gap:6px;padding:2px 0 4px}
+#widpop .wtabs{display:flex;flex-wrap:wrap;gap:6px;padding:2px 0 4px;flex:none}
+#widpop .wsearch{flex:none}
+#widpop .wlist{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;scrollbar-width:thin;padding-right:2px}
+#widpop .wlay{flex:none}
 #widpop .wtab{flex:none;min-width:0;min-height:40px;flex-direction:row;gap:8px;padding:0 14px 0 8px;border-radius:999px;background:var(--hover);font-size:14px;font-weight:600;white-space:nowrap}
 #widpop .wtab.on{background:var(--g);color:#fff;box-shadow:0 6px 14px rgba(0,0,0,.2)}
 #widpop .wt{width:var(--s,46px);height:var(--s,46px);border-radius:calc(var(--s,46px)*.3);background:linear-gradient(135deg,rgba(255,255,255,.28),rgba(255,255,255,0) 60%),var(--g);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
-#widpop .wgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-height:min(46vh,380px);overflow:auto;padding:2px}
+#widpop .wgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:2px}
 #widpop .wi{position:relative;min-height:104px;min-width:0;flex-direction:column;gap:9px;padding:14px 6px 10px;font-size:13px;font-weight:600;border-radius:18px;background:var(--hover);justify-content:flex-start}
 #widpop .wi .wt{box-shadow:0 6px 14px rgba(0,0,0,.2)}
 #widpop .wi small{white-space:normal;text-align:center;line-height:1.15;font-size:13px;color:var(--ink)}
@@ -204,7 +207,7 @@ const host = h('<div id="widgets"></div>');
 stage.appendChild(host);
 const openW = {};
 let zc = 12;
-const defZoom = () => clamp(host.clientHeight / 820, .9, 1.4);
+const defZoom = () => clamp(host.clientHeight / 820, .6, 1.4);
 const front = w => { w.style.zIndex = ++zc; if (zc > 48) { zc = 12; Object.values(openW).forEach(o => o.el.style.zIndex = ++zc) } };
 
 function closeW(id) { const o = openW[id]; if (!o) return; try { o.cleanup && o.cleanup() } catch (e) {} o.el.remove(); delete openW[id]; menuState() }
@@ -1012,6 +1015,8 @@ function renderMenu() {
   menuState();
 }
 pop.querySelector('.ws').addEventListener('input', renderMenu);
+// Mausrad überall im Menü scrollt die Widget-Liste (auch über Reitern und Rändern)
+pop.addEventListener('wheel', e => { const l = pop.querySelector('.wlist'); if (l.scrollHeight > l.clientHeight) { l.scrollTop += e.deltaY; e.preventDefault() } }, { passive: false });
 const saveLayout = () => {
   const n = pop.querySelector('.ln').value.trim() || ('Anordnung ' + (store.get('layouts', []).length + 1));
   const ws = Object.entries(openW).map(([id, o]) => ({ id, x: parseFloat(o.el.style.left), y: parseFloat(o.el.style.top), z: parseFloat(o.el.querySelector('.wb').style.zoom) || 1, min: o.el.classList.contains('min') }));
@@ -1064,7 +1069,7 @@ btn.addEventListener('click', () => { pop.querySelector('.ws').value = ''; rende
 renderMenu();
 window.__widgets = { openWidget, W: WG, closeW };
 // Die schmale Leiste zeigt nur Symbole: Beschriftung als Tooltip und für Screenreader
-document.querySelectorAll('#bar>.grp>button').forEach(b => {
+document.querySelectorAll('#bar .grp>button').forEach(b => {
   const s = b.querySelector('small'); if (!s || b.title) return;
   const t = b.id === 'dock' ? 'Leiste links/rechts' : s.textContent;
   b.title = t; if (!b.getAttribute('aria-label')) b.setAttribute('aria-label', t);
@@ -1074,7 +1079,7 @@ document.querySelectorAll('#bar>.grp>button').forEach(b => {
 const ctx = { klasse: '', thema: '' };
 const PL = { pkg: null, lesson: null };             // Stundenpaket des Planers, aktuell geladene Stunde
 const RES = { dran: [], gruppen: null };            // Ergebnisse dieser Stunde (für die Rückmeldung an den Planer)
-const showStunde = () => { window.__kopfText = [ctx.klasse, ctx.thema].filter(Boolean).join(' · '); dirty = true; };
+const showStunde = () => { window.__kopfText = ''; dirty = true; };   // Klassenname wird nicht mehr auf die Seite geschrieben
 const waitFor = async (fn, ms = 8000) => { const t0 = Date.now(); while (!fn() && Date.now() - t0 < ms) await new Promise(r => setTimeout(r, 100)); return fn() };
 const inkC = () => S.theme === 'board' ? '#ffffff' : '#111111';
 const greyC = () => S.theme === 'board' ? '#c3cad6' : '#6b7280';
@@ -1104,6 +1109,7 @@ async function cardImage(t) {
 
 /* Seiten einer Stunde: übernommen werden nur die Stundentransparenz („Unser Fahrplan heute:“) und das Tafelbild.
    Alle anderen Planungsinformationen (Ziel, Phasen, Hausaufgabe, Material …) bleiben im Planer. */
+const MEASURE = document.createElement('canvas').getContext('2d');   // zum Ausmessen von Text (ctx heißt hier der Planer-Zustand)
 const FAHRPLAN_FARBEN = ['#e03131', '#1f6feb', '#2f9e44', '#f08c00', '#9c36b5', '#0ca678', '#e64980', '#1c3d8f', '#8d5524', '#15aabf', '#82c91e', '#d9a400'];
 
 /* Übersichtliche Fahrplan-Seite: je Schritt eine Zeile  ① → Information → Bildkarte  (ab 5 Schritten in zwei Spalten) */
@@ -1117,9 +1123,11 @@ async function fahrplanPage(tp) {
     const t = tp[i], col = two ? (i < rows ? 0 : 1) : 0, r = two ? (i < rows ? i : i - rows) : i;
     const x = 100 + col * (colW + 60), y = top + r * rh, cy = y + rh / 2, c = FAHRPLAN_FARBEN[i % FAHRPLAN_FARBEN.length];
     // Nummer im farbigen Kreis
-    const R = Math.min(50, rh / 2 - 12), ns = Math.round(R * 1.35), nw = String(i + 1).length * .58 * ns;
+    const R = Math.min(50, rh / 2 - 12), ns = Math.round(R * 1.35);
+    MEASURE.font = `${ns}px "Segoe UI",Arial,sans-serif`; MEASURE.textBaseline = 'top'; MEASURE.textAlign = 'left';
+    const mm = MEASURE.measureText(String(i + 1));   // tatsächliche Zeichenfläche der Ziffer messen, damit sie genau mittig sitzt
     objs.push({ t: 'ellipse', x1: x, y1: cy - R, x2: x + 2 * R, y2: cy + R, c, w: 9 });
-    objs.push(TX(x + R - nw / 2, cy - ns * .56, i + 1, ns, c));
+    objs.push(TX(x + R - (mm.actualBoundingBoxRight - mm.actualBoundingBoxLeft) / 2, cy - (mm.actualBoundingBoxDescent - mm.actualBoundingBoxAscent) / 2, i + 1, ns, c));
     // Bildkarte rechts
     const im = await cardImage(t);
     const ch = rh - 20, ratio = im ? im.w / im.h : 1.5;
