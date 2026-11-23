@@ -10,18 +10,20 @@
 <style>
 :root{
   --font:"Inter","Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;
-  --accent:#4f46e5;--accent2:#7c3aed;
-  --bar:rgba(255,255,255,.9);--ink:#1e2433;--mute:#6b7388;
-  --line:rgba(30,36,51,.1);--hover:rgba(30,36,51,.07);
-  --shadow:0 12px 40px rgba(8,12,30,.35),0 2px 8px rgba(8,12,30,.18);
-  --stagebg:radial-gradient(1300px 760px at 18% -10%,#2c3562 0%,#171c33 52%,#0d111f 100%);
+  --accent:#5b5bd6;--accent2:#7c6ae6;
+  --bar:rgba(255,255,255,.94);--ink:#252b3b;--mute:#7a8296;
+  --line:rgba(30,40,70,.09);--hover:rgba(30,40,70,.055);
+  --shadow:0 10px 32px rgba(30,40,80,.12),0 1px 3px rgba(30,40,80,.08);
+  --stagebg:linear-gradient(165deg,#f6f7fb 0%,#eceff5 100%);
+  --wrapshadow:0 16px 44px rgba(30,40,80,.14),0 0 0 1px rgba(30,40,80,.07);
 }
-@media(prefers-color-scheme:dark){:root{--bar:rgba(30,34,52,.88);--ink:#e9ecf6;--mute:#9aa2bb;--line:rgba(255,255,255,.1);--hover:rgba(255,255,255,.09)}}
+/* Umgebung dunkel (Schalter im Hilfsmittel-Menü) */
+html.surround-dark{--accent:#8b8cf0;--accent2:#a08cf5;--bar:rgba(30,34,52,.92);--ink:#e9ecf6;--mute:#9aa2bb;--line:rgba(255,255,255,.1);--hover:rgba(255,255,255,.08);--shadow:0 12px 40px rgba(8,12,30,.35),0 2px 8px rgba(8,12,30,.18);--stagebg:radial-gradient(1300px 760px at 18% -10%,#2c3562 0%,#171c33 52%,#0d111f 100%);--wrapshadow:0 20px 60px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.06)}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden;background:var(--stagebg);font-family:var(--font);color:var(--ink);-webkit-user-select:none;user-select:none;-webkit-font-smoothing:antialiased}
 body{display:flex;flex-direction:row}
 #stage{flex:1;position:relative;min-height:0;min-width:0;display:flex;align-items:flex-start;justify-content:center;padding:12px;touch-action:none}
-#wrap{position:relative;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.06)}
+#wrap{position:relative;border-radius:16px;box-shadow:var(--wrapshadow)}
 #cv{width:100%;height:100%;display:block;touch-action:none;cursor:crosshair;border-radius:16px}
 
 .ic{width:24px;height:24px;flex:none;display:block}
@@ -33,8 +35,8 @@ button:active:not(:disabled){transform:scale(.94)}
 button:disabled{opacity:.3;cursor:default}
 #tinfo:disabled{opacity:1}
 button:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
-button.on{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 6px 16px rgba(79,70,229,.45)}
-button.on small{color:rgba(255,255,255,.85)}
+button.on{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--accent) 34%,transparent)}
+button.on small{color:var(--accent)}
 
 /* Werkzeugleiste: schmale Spalte am linken Rand (zweispaltig, nur Symbole) */
 #bar{order:-1;position:relative;align-self:flex-start;margin:12px 0 12px 12px;width:max-content;background:var(--bar);-webkit-backdrop-filter:blur(20px) saturate(1.5);backdrop-filter:blur(20px) saturate(1.5);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column;gap:0;align-items:stretch;z-index:20}
@@ -59,6 +61,12 @@ body.right #bar{order:1;margin:12px 12px 12px 0}
 .sw.on{box-shadow:inset 0 0 0 2px rgba(0,0,0,.14),0 0 0 2px var(--bar),0 0 0 4px var(--accent)}
 #colors{padding:4px 0;row-gap:10px}
 .sz{min-width:0}
+/* Beschriftungen zeigen (Schalter im Hilfsmittel-Menü) */
+html.labels #bar{--bw:66px}
+html.labels #bar>.grp>button{height:auto;min-height:56px;gap:3px}
+html.labels #bar>.grp>button small{display:block;font-size:10.5px}
+html.labels #bar>.grp>button.sw{width:22px;min-height:0;height:22px}
+html.labels #bar>.grp>#pnum{height:auto}
 @media(max-height:860px){#bar{--bw:38px}#bar>.grp>button .ic{width:20px;height:20px}#bar>.grp>button.sw{width:18px;height:18px}}
 @media(max-height:700px){#bar{--bw:34px}#bar>.grp>button .ic{width:18px;height:18px}#bar>.grp>button.sw{width:16px;height:16px}}
 .sz i{display:block;border-radius:50%;background:currentColor}
@@ -68,7 +76,7 @@ body.right #bar{order:1;margin:12px 12px 12px 0}
 .pop{position:absolute;top:0;left:calc(100% + 12px);width:max-content;max-width:min(calc(100vw - 140px),780px);background:var(--bar);-webkit-backdrop-filter:blur(20px) saturate(1.5);backdrop-filter:blur(20px) saturate(1.5);border:1px solid var(--line);border-radius:22px;padding:12px;display:none;gap:6px;flex-wrap:wrap;justify-content:center;box-shadow:var(--shadow)}
 body.right .pop{left:auto;right:calc(100% + 12px)}
 .pop.show{display:flex;animation:pop .16s ease-out}
-@keyframes pop{from{opacity:0;margin-top:8px}}
+@keyframes pop{from{opacity:0;transform:translateY(4px)}}
 .pop h4{flex-basis:100%;margin:6px 6px 0;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);font-weight:600}
 .pop h4:first-child{margin-top:0}
 
@@ -108,13 +116,13 @@ body.right .pop{left:auto;right:calc(100% + 12px)}
 </div>
 
 <div id="bar">
-  <div class="grp" id="tools"></div>
-  <div class="grp" id="colors"></div>
-  <div class="grp" id="sizes"></div>
   <div class="grp">
     <button id="undo"><i data-ic="undo"></i><small>Zurück</small></button>
     <button id="redo"><i data-ic="redo"></i><small>Vor</small></button>
   </div>
+  <div class="grp" id="tools"></div>
+  <div class="grp" id="colors"></div>
+  <div class="grp" id="sizes"></div>
   <div class="grp" id="tblgrp" style="display:none">
     <button id="tinfo" disabled><b id="tinfot">4×3</b><small>Zeilen×Spalten</small></button>
     <button id="trm"><b>−</b><small>Zeile</small></button>
@@ -169,6 +177,10 @@ body.right .pop{left:auto;right:calc(100% + 12px)}
     <h4>Hilfsmittel</h4>
     <button id="mtc"><i data-ic="hand"></i><small>Mehrfach-Touch</small></button>
     <button id="snp"><i data-ic="line"></i><small>Gerade Linie</small></button>
+    <h4>Ansicht</h4>
+    <button id="lbl"><i data-ic="tag"></i><small>Beschriftungen</small></button>
+    <button id="srf"><i data-ic="sun"></i><small>Umgebung hell/dunkel</small></button>
+    <button id="intr"><i data-ic="help"></i><small>Einführung</small></button>
     <button id="tim"><i data-ic="timer"></i><small>Timer</small></button>
     <button id="thm"><i data-ic="contrast"></i><small>Tafel-Design</small></button>
   </div>
@@ -206,6 +218,8 @@ image:'<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r=
 rect:'<rect width="18" height="18" x="3" y="3" rx="2"/>',
 ellipse:'<circle cx="12" cy="12" r="9"/>',
 table:'<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M12 3v18"/>',
+tag:'<path d="M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.41l8.7 8.7a2.43 2.43 0 0 0 3.42 0l6.58-6.58a2.43 2.43 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".6" fill="currentColor"/>',
+sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
 search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
 eye:'<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
 compass:'<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>',
@@ -245,7 +259,7 @@ pause:'<rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width=
 reset:'<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
 rotL:'<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
 rotR:'<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>'};
-const ic=(n,s=24)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||''}</svg>`;
+const ic=(n,s=24)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||''}</svg>`;
 const hydrate=()=>document.querySelectorAll('i[data-ic]').forEach(e=>e.outerHTML=ic(e.dataset.ic));
 let S={theme:'white',cur:0,pages:[],images:{}};
 let tool='pen',color='#111111',sizeIdx=1,sel=null,draft=null,scale=1,dirty=true,tblR=4,tblK=3;
@@ -364,17 +378,21 @@ function render(c,page,withSel){
   c.font='700 64px "Segoe UI",Arial,sans-serif';c.textAlign='right';c.fillText(page.date||todayStr(),W-48,30);
   if(window.__kopfText){c.font='600 48px "Segoe UI",Arial,sans-serif';c.textAlign='left';c.globalAlpha=.8;c.fillText(window.__kopfText,48,38)}
   c.restore();
+  if(withSel&&!page.objs.length&&!page.bgImg&&!draft){c.save();c.fillStyle=board?'rgba(255,255,255,.42)':'rgba(90,100,125,.42)';c.font='500 44px "Segoe UI",Arial,sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('Stift wählen und losschreiben – oder Widgets öffnen',W/2,H/2);c.restore()}
   page.objs.forEach(o=>drawObj(c,o));
   if(withSel&&draft)drawObj(c,draft);
   if(withSel){Object.values(multi).forEach(d=>drawObj(c,d));
     if(draft&&draft.cx!=null){c.save();c.strokeStyle='#1f6feb';c.lineWidth=3;c.setLineDash([10,8]);c.beginPath();c.moveTo(draft.cx,draft.cy);c.lineTo(draft.px==null?draft.cx:draft.px,draft.py==null?draft.cy:draft.py);c.stroke();c.setLineDash([]);c.fillStyle='#1f6feb';c.beginPath();c.arc(draft.cx,draft.cy,6,0,7);c.fill();c.restore()}}
-  if(withSel&&sel!=null&&page.objs[sel]){const b=bbox(page.objs[sel]);c.save();c.strokeStyle='#1f6feb';c.lineWidth=3;c.setLineDash([12,8]);c.strokeRect(b[0]-8,b[1]-8,b[2]-b[0]+16,b[3]-b[1]+16);c.restore()}
+  if(withSel&&sel!=null&&page.objs[sel]){const o=page.objs[sel],b=bbox(o);c.save();c.strokeStyle='#1f6feb';c.lineWidth=3;c.setLineDash([12,8]);c.strokeRect(b[0]-8,b[1]-8,b[2]-b[0]+16,b[3]-b[1]+16);
+    if(RESIZABLE.includes(o.t)){c.setLineDash([]);c.fillStyle='#1f6feb';c.strokeStyle='#fff';c.lineWidth=3;c.beginPath();c.arc(b[2]+8,b[3]+8,15,0,7);c.fill();c.stroke()}   // Griff zum Vergrößern/Verkleinern
+    c.restore()}
 }
 function loop(){let d=false;if(dirty){dirty=false;d=true;render(ctx,P(),true)}if(window.__lens)window.__lens(d);requestAnimationFrame(loop)}
 
 /* ---------- Eingabe ---------- */
 let act=null,lastPen=0,moved=false;
 const pos=e=>{const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}};
+const RESIZABLE=['img','rect','ellipse','table','cover'];
 function hit(x,y){const o=P().objs;for(let i=o.length-1;i>=0;i--){if(o[i].lock)continue;const b=bbox(o[i]);if(x>=b[0]-12&&x<=b[2]+12&&y>=b[1]-12&&y<=b[3]+12)return i}return -1}
 function near(o,x,y,r){
   if(o.t==='path')return o.pts.some(p=>Math.hypot(p[0]-x,p[1]-y)<r+o.w/2);
@@ -420,7 +438,11 @@ cv.addEventListener('pointerdown',e=>{
   e.preventDefault();
   const p=pos(e);act=e.pointerId;actType=e.pointerType;moved=false;cv.setPointerCapture(e.pointerId);
   if(tool==='text'){act=null;openText(p.x,p.y);return}
-  if(tool==='select'){const i=hit(p.x,p.y);sel=i>=0?i:null;draft=i>=0?{drag:p}:null;ui();dirty=true;return}
+  if(tool==='select'){
+    // Größe ändern: Griff unten rechts am ausgewählten Bild / an der ausgewählten Form
+    const so=sel!=null?P().objs[sel]:null;
+    if(so&&RESIZABLE.includes(so.t)){const b=bbox(so);if(Math.hypot(p.x-(b[2]+8),p.y-(b[3]+8))<34){draft={resize:so,ratio:so.t==='img'?so.h/so.w:0};ui();dirty=true;return}}
+    const i=hit(p.x,p.y);sel=i>=0?i:null;draft=i>=0?{drag:p}:null;ui();dirty=true;return}
   if(tool==='eraser'){eraseAt(p);return}
   const w=tool==='hl'?PEN[sizeIdx]*3.5:PEN[sizeIdx];
   if(tool==='pen'||tool==='hl'){
@@ -444,7 +466,14 @@ cv.addEventListener('pointermove',e=>{
   for(const ev of evs.length?evs:[e]){
     const p=pos(ev);
     if(tool==='eraser'){eraseAt(p)}
-    else if(tool==='select'){if(draft&&draft.drag&&sel!=null){move(P().objs[sel],p.x-draft.drag.x,p.y-draft.drag.y);draft.drag=p;moved=true}}
+    else if(tool==='select'){
+      if(draft&&draft.drag&&sel!=null){move(P().objs[sel],p.x-draft.drag.x,p.y-draft.drag.y);draft.drag=p;moved=true}
+      else if(draft&&draft.resize){
+        const o=draft.resize;
+        if(o.t==='img'){o.w=Math.max(60,p.x-o.x);o.h=o.w*draft.ratio}
+        else{if(o.x1>=o.x2)o.x1=Math.max(o.x2+20,p.x);else o.x2=Math.max(o.x1+20,p.x);if(o.y1>=o.y2)o.y1=Math.max(o.y2+20,p.y);else o.y2=Math.max(o.y1+20,p.y)}
+        moved=true}
+    }
     else if(draft){
       if(draft.t==='path'){
         if(draft.edge){const s=draft.edge,dx=s.bx-s.ax,dy=s.by-s.ay,t=Math.max(0,Math.min(1,((p.x-s.ax)*dx+(p.y-s.ay)*dy)/(dx*dx+dy*dy)));draft.pts[1]=[s.ax+t*dx,s.ay+t*dy]}
@@ -610,6 +639,9 @@ function ui(){
   $('#pprev').disabled=S.cur===0;$('#pnext').disabled=S.cur>=S.pages.length-1;
   $('#undo').disabled=p.hi<=0;$('#redo').disabled=p.hi>=p.hist.length-1;
   $('#selgrp').style.display=sel!=null?'grid':'none';
+  {const dr=['pen','hl','rect','ellipse','line','arrow','table','zirkel','text'],so0=sel!=null?p.objs[sel]:null;
+   $('#colors').style.display=(dr.includes(tool)||(tool==='select'&&so0&&so0.c))?'':'none';
+   $('#sizes').style.display=dr.includes(tool)?'':'none'}
   const so=sel!=null?p.objs[sel]:null,st=so&&so.t==='table'?so:null;
   $('#tblgrp').style.display=(tool==='table'||st)?'grid':'none';
   $('#tinfot').textContent=(st?st.r:tblR)+'×'+(st?st.k:tblK);
@@ -653,6 +685,9 @@ $('#slock').onclick=()=>{if(sel!=null){P().objs[sel].lock=true;sel=null;snap();t
 $('#punlock').onclick=()=>{hideAllPops();let n=0;P().objs.forEach(o=>{if(o.lock){delete o.lock;n++}});if(n)snap();toast(n?n+' Objekt(e) entsperrt':'Nichts gesperrt')};
 $('#mtc').onclick=()=>{multiOn=!multiOn;$('#mtc').classList.toggle('on',multiOn);toast(multiOn?'Mehrfach-Touch an: mehrere Finger zeichnen gleichzeitig (jeder in eigener Farbe)':'Mehrfach-Touch aus',3500)};
 $('#snp').onclick=()=>{snapOn=!snapOn;$('#snp').classList.toggle('on',snapOn);toast(snapOn?'Gerade Linie an: Stift am Ende kurz ruhig halten':'Gerade Linie aus',3500)};
+$('#lbl').onclick=()=>{const on=document.documentElement.classList.toggle('labels');try{localStorage.setItem('tafel-labels',on?'1':'0')}catch(e){}$('#lbl').classList.toggle('on',on);hideAllPops()};
+$('#srf').onclick=()=>{const dark=document.documentElement.classList.toggle('surround-dark');try{localStorage.setItem('tafel-surround',dark?'dark':'light')}catch(e){}$('#srf').classList.toggle('on',dark);hideAllPops()};
+$('#intr').onclick=()=>{hideAllPops();window.__intro&&window.__intro(true)};
 $('#undo').onclick=undo;$('#redo').onclick=redo;
 $('#pprev').onclick=()=>setPage(S.cur-1);$('#pnext').onclick=()=>setPage(S.cur+1);$('#padd').onclick=()=>addPage();
 $('#pdel').onclick=()=>{hideAllPops();askDelPage(S.cur)};
@@ -764,6 +799,7 @@ addEventListener('keydown',e=>{
 (async function init(){
   buildBar();
   try{if(localStorage.getItem('tafel-dock')==='right')document.body.classList.add('right')}catch(e){}
+  try{const L=localStorage.getItem('tafel-labels')==='1',D=localStorage.getItem('tafel-surround')==='dark';document.documentElement.classList.toggle('labels',L);document.documentElement.classList.toggle('surround-dark',D);$('#lbl').classList.toggle('on',L);$('#srf').classList.toggle('on',D)}catch(e){}
   S.pages=[mkPage('plain')];
   try{const saved=await kvGet('state');if(saved)restore(saved)}catch(e){}
   hydrate();toolsUI();fit();loop();

@@ -11,6 +11,8 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] } return a };
 const pad = n => String(n).padStart(2, '0');
+const WICONS = {};
+const wic = (n, sz = 20) => `<svg class="wic" width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${WICONS[n] || ''}</svg>`;
 
 /* ---------- Stil ---------- */
 const css = document.createElement('style');
@@ -25,23 +27,35 @@ body.theme-board{--w-bg:rgba(13,17,31,.93);--w-fg:#ffffff;--w-mute:#aab2cc;--w-s
 .wg .wh .wm{min-width:38px;min-height:38px;width:38px;height:38px;padding:0;border-radius:50%;background:transparent}
 .wg .wh .wx{background:transparent}
 .wg .wh .ei{font-size:20px;line-height:1}
-/* Menü: Suche, Favoriten, Anordnungen */
-#widpop{width:min(560px,calc(100vw - 140px));flex-direction:column;align-items:stretch;gap:4px;padding:14px}
+/* Menü: Suche, Reiter, Kacheln, Anordnungen */
+#widpop{width:min(700px,calc(100vw - 140px));flex-direction:column;align-items:stretch;gap:10px;padding:14px;background:#fff}
+html.surround-dark #widpop{background:#1e2234}
 #widpop.show{display:flex}
-#widpop .ws{font:inherit;font-size:15px;border:1px solid var(--line);background:var(--hover);color:var(--ink);border-radius:12px;padding:10px 14px;outline:none;-webkit-user-select:text;user-select:text}
+#widpop .wsearch{position:relative}
+#widpop .wsearch svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);opacity:.5;pointer-events:none}
+#widpop .ws{width:100%;font:inherit;font-size:15px;border:1px solid var(--line);background:var(--hover);color:var(--ink);border-radius:14px;padding:11px 14px 11px 40px;outline:none;-webkit-user-select:text;user-select:text}
 #widpop .ws:focus{border-color:var(--accent)}
-#widpop .wgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-#widpop .wi{position:relative;min-height:74px;flex-direction:column;gap:4px;padding:8px 4px;font-size:12px}
-#widpop .wi .em{font-size:26px;line-height:1}
-#widpop .wi small{white-space:normal;text-align:center;line-height:1.15}
-#widpop .wi .fv{position:absolute;right:2px;top:2px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:15px;border-radius:50%;opacity:.35;cursor:pointer}
+#widpop .wtabs{display:flex;flex-wrap:wrap;gap:6px;padding:2px 0 4px}
+#widpop .wtab{flex:none;min-width:0;min-height:40px;flex-direction:row;gap:8px;padding:0 14px 0 8px;border-radius:999px;background:var(--hover);font-size:14px;font-weight:600;white-space:nowrap}
+#widpop .wtab.on{background:var(--g);color:#fff;box-shadow:0 6px 14px rgba(0,0,0,.2)}
+#widpop .wt{width:var(--s,46px);height:var(--s,46px);border-radius:calc(var(--s,46px)*.3);background:linear-gradient(135deg,rgba(255,255,255,.28),rgba(255,255,255,0) 60%),var(--g);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+#widpop .wgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-height:min(46vh,380px);overflow:auto;padding:2px}
+#widpop .wi{position:relative;min-height:104px;min-width:0;flex-direction:column;gap:9px;padding:14px 6px 10px;font-size:13px;font-weight:600;border-radius:18px;background:var(--hover);justify-content:flex-start}
+#widpop .wi .wt{box-shadow:0 6px 14px rgba(0,0,0,.2)}
+#widpop .wi small{white-space:normal;text-align:center;line-height:1.15;font-size:13px;color:var(--ink)}
+#widpop .wi.on{outline:2px solid var(--accent);outline-offset:-2px;background:var(--hover)}
+#widpop .wi .fv{position:absolute;right:5px;top:3px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:16px;border-radius:50%;opacity:.28;cursor:pointer}
 #widpop .wi:hover .fv,#widpop .wi .fv.on{opacity:1}
 #widpop .wi .fv.on{color:#e6a700}
-#widpop .wlay{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px}
-#widpop .wlay input{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--hover);color:var(--ink);border-radius:10px;padding:6px 10px;width:150px;outline:none}
-#widpop .wlay button{min-height:36px;min-width:0;flex-direction:row;padding:0 12px;font-size:13px;border-radius:10px;background:var(--hover)}
-#widpop h4{margin:10px 4px 2px}
-.wg{position:absolute;pointer-events:auto;background:var(--w-bg);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);color:var(--w-fg);border:1px solid var(--w-line);border-radius:22px;box-shadow:var(--shadow);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+#widpop h4{margin:6px 4px 0}
+#widpop .wlay{border-top:1px solid var(--line);padding-top:8px;font-size:13px}
+#widpop .wlay summary{cursor:pointer;font-weight:600;color:var(--mute);padding:4px 2px}
+#widpop .wlrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+#widpop .wlrow input{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--hover);color:var(--ink);border-radius:10px;padding:6px 10px;width:170px;outline:none}
+#widpop .wlrow button{min-height:36px;min-width:0;flex-direction:row;padding:0 12px;font-size:13px;border-radius:10px;background:var(--hover)}
+.wg .wh .ei{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,rgba(255,255,255,.28),rgba(255,255,255,0) 60%),var(--g,#6366f1);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+.wg{position:absolute;pointer-events:auto;background:var(--w-bg);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);color:var(--w-fg);border:1px solid var(--w-line);border-radius:22px;box-shadow:var(--shadow);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;animation:wgin .18s ease-out}
+@keyframes wgin{from{opacity:0;transform:translateY(6px) scale(.985)}}
 .wg .wh{display:flex;align-items:center;gap:8px;padding:10px 6px 4px 16px;cursor:grab;font-weight:700;font-size:15px;letter-spacing:.01em;color:var(--w-fg);touch-action:none}
 .wg .wh .wt{flex:1;white-space:nowrap}
 .wg .wh .wx{min-width:38px;min-height:38px;width:38px;height:38px;padding:0;border-radius:50%}
@@ -50,8 +64,8 @@ body.theme-board{--w-bg:rgba(13,17,31,.93);--w-fg:#ffffff;--w-mute:#aab2cc;--w-s
 .wg button{color:var(--w-fg);background:var(--w-soft);min-height:48px;min-width:48px;font-size:15px;font-weight:600;flex-direction:row;padding:0 14px;border-radius:12px;gap:6px}
 .wg button small{color:inherit;font-size:13px}
 @media(hover:hover){.wg button:hover:not(:disabled):not(.on){background:var(--w-soft2)}}
-.wg button.big{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));min-height:52px;font-size:17px;padding:0 22px}
-.wg button.on{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.wg button.big{color:#fff;background:#5b5bd6;min-height:52px;font-size:17px;padding:0 22px}
+.wg button.on{color:#fff;background:#5b5bd6}
 .wg .ic{width:20px;height:20px}
 .wg input,.wg textarea,.wg select{font:inherit;font-size:15px;background:var(--w-soft);color:var(--w-fg);border:1px solid var(--w-line2);border-radius:10px;padding:8px 10px;-webkit-user-select:text;user-select:text;outline:none;min-width:0}
 .wg input:focus,.wg textarea:focus{border-color:#a5b4fc}
@@ -64,6 +78,11 @@ body.theme-board{--w-bg:rgba(13,17,31,.93);--w-fg:#ffffff;--w-mute:#aab2cc;--w-s
 .wg details{margin-top:12px;font-size:14px;color:var(--w-mute)}
 .wg summary{cursor:pointer;padding:4px 0}
 .wg .hint{font-size:12.5px;color:var(--w-mute);margin-top:8px;max-width:330px}
+/* Bildkarten */
+.kg{display:grid;grid-template-columns:repeat(4,150px);gap:8px;max-height:440px;overflow:auto;padding:2px;touch-action:pan-y}
+.wg .kc{flex-direction:column;align-items:stretch;min-height:0;min-width:0;padding:6px;gap:4px;background:var(--w-soft)}
+.kc img{width:100%;height:auto;aspect-ratio:3/2;object-fit:contain;border-radius:10px;background:#fff;display:block}
+.kc small{font-size:12px;line-height:1.15;text-align:center;white-space:normal}
 /* Symbole */
 .sy-big{text-align:center;padding:6px 0 10px}.sy-big .e{font-size:120px;line-height:1.1}.sy-big .l{font-size:30px;font-weight:700}
 .sy-grid{display:grid;grid-template-columns:repeat(4,86px);gap:8px}
@@ -133,9 +152,20 @@ body.theme-board{--w-bg:rgba(13,17,31,.93);--w-fg:#ffffff;--w-mute:#aab2cc;--w-s
 .fete{position:absolute;inset:0;z-index:50;background:rgba(10,14,30,.55);display:flex;align-items:center;justify-content:center;text-align:center;pointer-events:auto;cursor:pointer;border-radius:16px}
 .fete canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .fete div{position:relative;color:#fff;font-size:min(8vw,110px);font-weight:800;line-height:1.15;text-shadow:0 6px 30px rgba(0,0,0,.6);padding:0 5%}
+.tmr{display:flex;gap:10px;font-size:14px;padding:3px 0}.tmr b{min-width:104px}
+/* Einführung beim ersten Start */
+#intro{position:fixed;inset:0;z-index:200;background:rgba(20,26,48,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px}
+#intro .ic-card{background:#fff;color:#252b3b;border-radius:26px;padding:28px 30px 24px;max-width:720px;box-shadow:0 24px 70px rgba(10,15,40,.35);animation:wgin .25s ease-out}
+#intro h2{margin:0 0 4px;font-size:26px;font-weight:700}#intro p.sub{margin:0 0 18px;color:#7a8296;font-size:15px}
+#intro .ic-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+#intro .ic-s{display:flex;gap:12px;align-items:flex-start;background:#f3f4f9;border-radius:18px;padding:14px}
+#intro .ic-s .t{width:40px;height:40px;border-radius:12px;background:#5b5bd6;color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+#intro .ic-s b{display:block;font-size:15px;margin-bottom:2px}#intro .ic-s span{font-size:13.5px;line-height:1.35;color:#5b6479}
+#intro .ic-go{margin:20px 0 0 auto;display:flex;min-height:48px;padding:0 26px;border-radius:14px;background:#5b5bd6;color:#fff;font-size:16px;font-weight:600;flex-direction:row}
+@media(max-width:640px){#intro .ic-grid{grid-template-columns:1fr}}
 /* Lupe / Spot */
 #dim{position:absolute;inset:0;pointer-events:none;display:none;z-index:7;border-radius:16px}
-#linksgrp button img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
+#linksgrp button img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;border-radius:10px;box-shadow:0 0 0 1px rgba(30,40,70,.14)}
 #lens{position:absolute;display:none;z-index:9;touch-action:none;cursor:grab}
 #lens canvas{display:block;width:100%;height:100%;border-radius:50%;border:4px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.35),0 14px 40px rgba(0,0,0,.45);background:#fff}
 #lens .lt{position:absolute;left:50%;top:calc(100% + 10px);transform:translateX(-50%);display:flex;gap:4px;background:rgba(13,17,31,.92);padding:4px;border-radius:14px;cursor:default;white-space:nowrap}
@@ -182,8 +212,8 @@ function closeW(id) { const o = openW[id]; if (!o) return; try { o.cleanup && o.
 function openWidget(def) {
   if (openW[def.id]) { closeW(def.id); return }
   const n = Object.keys(openW).length;
-  const w = h(`<div class="wg"><div class="wh"><span class="ei">${def.em}</span><span class="wt">${esc(def.title)}</span><button class="wm" aria-label="Verkleinern" title="Verkleinern">${ic('minus', 18)}</button><button class="wx" aria-label="Schließen" title="Schließen">${ic('close', 18)}</button></div><div class="wb"></div><div class="wz" title="Größe ändern"></div></div>`);
-  w.style.setProperty('--wa', ({ Klasse: '#6366f1', Zeit: '#f59e0b', Werkzeuge: '#14b8a6', Material: '#ec4899' })[def.group] || '#6366f1');
+  const w = h(`<div class="wg"><div class="wh"><span class="ei" style="--g:${grpOf(def.group)[3]}">${wic(def.icon, 18)}</span><span class="wt">${esc(def.title)}</span><button class="wm" aria-label="Verkleinern" title="Verkleinern">${ic('minus', 18)}</button><button class="wx" aria-label="Schließen" title="Schließen">${ic('close', 18)}</button></div><div class="wb"></div><div class="wz" title="Größe ändern"></div></div>`);
+  w.style.setProperty('--wa', grpOf(def.group)[3]);
   { const rc = store.get('recent', []).filter(x => x !== def.id); rc.unshift(def.id); store.set('recent', rc.slice(0, 8)) }
   const body = w.querySelector('.wb'), hd = w.querySelector('.wh'), zh = w.querySelector('.wz');
   let z = defZoom() * (def.zoom || 1);
@@ -238,14 +268,59 @@ function klasseBox(parent, onchange) {
 const WG = [];
 const add = (id, em, title, group, build, zoom) => WG.push({ id, em, title, group, build, zoom });
 
-/* Arbeitssymbole */
-add('symbole', '🧍', 'Arbeitssymbole', 'Klasse', b => {
+/* Bildkarten (Sozialformen, Methoden, Zeit, Überschriften, Pfeile): antippen legt die Karte auf die Tafel;
+   dort mit dem blauen Griff unten rechts größer/kleiner ziehen, verschieben, kopieren oder löschen */
+const KAT = [['sozial', 'Sozialformen'], ['methoden', 'Methoden'], ['zeit', 'Zeit'], ['ueber', 'Überschriften'], ['pfeil', 'Pfeile']];
+let kartenLoad = null;
+const loadKarten = () => kartenLoad || (kartenLoad = new Promise(res => {
+  if (window.KARTEN) return res(window.KARTEN);
+  const s = document.createElement('script'); s.src = 'karten/karten.js';
+  s.onload = () => res(window.KARTEN || null); s.onerror = () => res(null); document.head.appendChild(s);
+}));
+const karteData = async f => {
+  if (window.planer && window.planer.karte) { const d = await window.planer.karte(f); if (d) return d }
+  try { const r = await fetch('karten/' + f), bl = await r.blob(); return await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(bl) }) }
+  catch (e) { return 'karten/' + f }
+};
+function placeCard(k) {
+  karteData(k.f).then(src => {
+    const im = new Image();
+    im.onload = () => {
+      const id = uid(), w = k.k === 'zeit' ? 280 : k.k === 'pfeil' ? 380 : 560, h = w * k.h / k.w, n = P().objs.filter(o => o.t === 'img').length % 6;
+      S.images[id] = src; imgCache[id] = im;
+      P().objs.push({ t: 'img', id, x: Math.min(W - w - 20, 260 + n * 44), y: Math.min(H - h - 20, 150 + n * 44), w, h });
+      sel = P().objs.length - 1; tool = 'select'; snap(); toolsUI();
+      toast('Karte liegt auf der Tafel – mit dem blauen Punkt unten rechts die Größe ändern', 3500);
+    };
+    im.onerror = () => toast('Karte konnte nicht geladen werden', 3500);
+    im.src = src;
+  });
+}
+add('symbole', '🖼️', 'Bildkarten', 'Klasse', b => {
+  b.innerHTML = '<div class="hint" style="margin:0">Karten werden geladen …</div>';
+  loadKarten().then(K => {
+    if (!K || !K.length) { fallbackSymbole(b); return }
+    let kat = 'sozial';
+    b.innerHTML = `<div class="row" style="margin-top:0">${KAT.map(([k, n]) => `<button data-kat="${k}">${n}</button>`).join('')}</div><div class="row"><input class="ks" type="search" placeholder="Suchen …" style="flex:1;min-width:200px"></div><div class="kg"></div><div class="hint">Antippen legt die Karte auf die Tafel. Dort mit dem blauen Punkt unten rechts in der Größe ändern.</div>`;
+    const kg = b.querySelector('.kg'), ks = b.querySelector('.ks');
+    const draw = () => {
+      const q = ks.value.trim().toLowerCase(), list = K.filter(k => (q ? k.n.toLowerCase().includes(q) : k.k === kat));
+      kg.innerHTML = list.length ? list.map(k => `<button class="kc" data-f="${k.f}" title="${esc(k.n)}"><img loading="lazy" src="karten/${k.f}" alt="${esc(k.n)}"><small>${esc(k.n)}</small></button>`).join('') : '<div class="hint">Keine Karte gefunden.</div>';
+      b.querySelectorAll('[data-kat]').forEach(x => x.classList.toggle('on', !q && x.dataset.kat === kat));
+    };
+    b.querySelectorAll('[data-kat]').forEach(x => x.onclick = () => { kat = x.dataset.kat; ks.value = ''; draw() });
+    ks.oninput = draw;
+    kg.addEventListener('click', e => { const c = e.target.closest('.kc'); if (c) placeCard(K.find(k => k.f === c.dataset.f)) });
+    draw();
+  });
+}, 1);
+function fallbackSymbole(b) {
   const SYM = [['🧍', 'Einzelarbeit'], ['👫', 'Partnerarbeit'], ['👥', 'Gruppenarbeit'], ['🤫', 'Flüstern'], ['🔇', 'Ruhe'], ['✋', 'Melden'], ['📖', 'Lesen'], ['✏️', 'Schreiben'], ['👂', 'Zuhören'], ['🧹', 'Aufräumen'], ['🎒', 'Einpacken'], ['🙋', 'Fragen?']];
-  b.innerHTML = `<div class="sy-big"><div class="e"></div><div class="l"></div></div><div class="sy-grid">${SYM.map(([e, l], i) => `<button data-i="${i}"><span class="e">${e}</span>${l}</button>`).join('')}</div>`;
+  b.innerHTML = `<div class="sy-big"><div class="e"></div><div class="l"></div></div><div class="sy-grid">${SYM.map(([e, l], i) => `<button data-i="${i}"><span class="e">${e}</span>${l}</button>`).join('')}</div><div class="hint">Die Bildkarten sind in der Windows-App enthalten, nicht in der Internet-Version.</div>`;
   const pick = i => { b.querySelector('.e').textContent = SYM[i][0]; b.querySelector('.l').textContent = SYM[i][1]; b.querySelectorAll('.sy-grid button').forEach((x, j) => x.classList.toggle('on', i === j)) };
   b.querySelectorAll('.sy-grid button').forEach(x => x.onclick = () => pick(+x.dataset.i));
   pick(0);
-});
+}
 
 /* Ampel */
 add('ampel', '🚦', 'Ampel', 'Klasse', b => {
@@ -272,7 +347,7 @@ add('zufall', '🎯', 'Wer ist dran?', 'Klasse', b => {
     clearInterval(busy);
     const pickN = pool[Math.floor(Math.random() * pool.length)];
     let k = 0; busy = setInterval(() => {
-      if (++k > 18) { clearInterval(busy); out.textContent = pickN; done.push(pickN); upd(); return }
+      if (++k > 18) { clearInterval(busy); out.textContent = pickN; done.push(pickN); RES.dran.push(pickN); upd(); return }
       out.textContent = all[Math.floor(Math.random() * all.length)];
     }, 75);
   };
@@ -290,6 +365,7 @@ add('gruppen', '👥', 'Gruppen', 'Klasse', b => {
   b.querySelector('.go').onclick = () => {
     const all = klasse(); if (!all.length) { toast('Bitte zuerst die Klassenliste eintragen'); box.open = true; return }
     const g = Array.from({ length: n }, () => []); shuffle(all).forEach((x, i) => g[i % n].push(x));
+    RES.gruppen = g;
     wrap.innerHTML = g.map((m, i) => `<div class="gr-g" style="--c:${COL[i]}"><b>Gruppe ${i + 1}</b>${m.map(x => `<div>${esc(x)}</div>`).join('')}</div>`).join('');
   };
   const box = klasseBox(b);
@@ -361,7 +437,7 @@ add('geburtstag', '🎂', 'Geburtstag', 'Klasse', b => {
 /* Visueller Timer */
 add('zeitscheibe', '⏳', 'Zeit-Scheibe', 'Zeit', b => {
   let total = 300, end = 0, left = 300, iv = null;
-  b.innerHTML = `<div class="vt"><svg viewBox="-110 -110 220 220" width="250" height="250"><circle r="104" style="fill:var(--w-soft2)"/><path class="pie" fill="#ef4444"/><text class="tx" text-anchor="middle" y="14" font-size="42" font-weight="800" fill="#fff" style="paint-order:stroke;stroke:rgba(0,0,0,.65);stroke-width:6px"></text></svg></div><div class="row c pre">${[1, 2, 5, 10, 15, 20, 30].map(m => `<button data-m="${m}">${m}</button>`).join('')}</div><div class="row c"><label class="lab">Minuten <input type="number" class="cu" min="1" max="180" style="width:74px"></label><button class="big go">▶ Start</button><button class="rs" aria-label="Zurücksetzen">↺</button></div>`;
+  b.innerHTML = `<div class="vt"><svg viewBox="-110 -110 220 220" width="250" height="250"><circle r="104" style="fill:var(--w-soft2)"/><path class="pie" fill="#ef4444"/><text class="tx" text-anchor="middle" y="14" font-size="42" font-weight="800" fill="#fff" style="paint-order:stroke;stroke:rgba(0,0,0,.65);stroke-width:6px"></text></svg></div><div class="row c pre">${[1, 2, 5, 10, 15, 20, 30].map(m => `<button data-m="${m}">${m}</button>`).join('')}</div><div class="row c"><label class="lab">Minuten <input type="number" class="cu" min="1" max="180" style="width:74px"></label><button class="big go">▶ Start</button><button class="rs" aria-label="Zurücksetzen">↺</button></div>${(window.__lessonPhases||[]).length ? `<div class="row c phz">${window.__lessonPhases.map((p, i) => `<button data-pm="${p.min}" title="${esc(p.titel)}">${esc(p.titel)} ${p.min}′</button>`).join('')}</div>` : ''}`;
   const pie = b.querySelector('.pie'), tx = b.querySelector('.tx'), go = b.querySelector('.go');
   const draw = () => {
     const f = clamp(left / total, 0, 1), a = f * 2 * Math.PI;
@@ -371,6 +447,7 @@ add('zeitscheibe', '⏳', 'Zeit-Scheibe', 'Zeit', b => {
   const stop = () => { clearInterval(iv); iv = null; go.textContent = '▶ Start' };
   const set = m => { stop(); total = left = m * 60; b.querySelector('.cu').value = ''; draw() };
   b.querySelectorAll('.pre button').forEach(x => x.onclick = () => set(+x.dataset.m));
+  b.querySelectorAll('[data-pm]').forEach(x => x.onclick = () => set(+x.dataset.pm));
   b.querySelector('.cu').onchange = e => { const m = +e.target.value; if (m > 0) set(m) };
   b.querySelector('.rs').onclick = () => { stop(); left = total; draw() };
   go.onclick = () => {
@@ -401,11 +478,17 @@ add('stoppuhr', '⏱️', 'Stoppuhr', 'Zeit', b => {
 /* Countdown */
 add('countdown', '📅', 'Countdown', 'Zeit', b => {
   const s = store.get('countdown', { n: '', d: '' });
-  b.innerHTML = `<div class="cd-n">–</div><div class="cd-l"></div><div class="row c"><input class="nm" placeholder="Ereignis (z. B. Ferien)" style="width:200px"><input class="dt" type="date"></div>`;
+  b.innerHTML = `<div class="cd-n">–</div><div class="cd-l"></div><div class="row c"><input class="nm" placeholder="Ereignis (z. B. Ferien)" style="width:200px"><input class="dt" type="date"></div><div class="tmn"></div>`;
   const nm = b.querySelector('.nm'), dt = b.querySelector('.dt'), nn = b.querySelector('.cd-n'), ll = b.querySelector('.cd-l');
   nm.value = s.n; dt.value = s.d;
+  const termine = () => {   // Klassenarbeiten, Arbeitstermine und Schultermine aus dem LehrerPlaner
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const T = store.get('termine', []).map(t => { const [y, m, d] = String(t.datum).split('-').map(Number); return { ...t, days: Math.round((new Date(y, m - 1, d) - today) / 864e5) } }).filter(t => t.days >= 0).sort((a, c) => a.days - c.days).slice(0, 5);
+    b.querySelector('.tmn').innerHTML = T.length ? '<h4 style="margin:12px 0 4px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--w-mute)">Termine</h4>' + T.map(t => `<div class="tmr"><b>${t.days === 0 ? 'heute' : t.days === 1 ? 'morgen' : 'in ' + t.days + ' Tagen'}</b><span>${esc(t.titel)}</span></div>`).join('') : '';
+  };
   const draw = () => {
     ll.textContent = nm.value;
+    termine();
     if (!dt.value) { nn.textContent = '–'; return }
     const [y, m, d] = dt.value.split('-').map(Number), now = new Date();
     const days = Math.round((new Date(y, m - 1, d) - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 864e5);
@@ -709,6 +792,29 @@ add('anlaut', '🔤', 'Anlauttabelle', 'Material', b => {
   b.querySelectorAll('.al-g button').forEach(x => x.onclick = () => { const [l, e, w] = A[+x.dataset.i]; b.querySelector('.al-big .e').textContent = e; b.querySelector('.al-big .l').textContent = `${l} ${l.toLowerCase()} – ${w}` });
 });
 
+/* Stunde (LehrerPlaner): Stunden des Tages aus dem Stundenpaket laden, Sitzplan und Regeln als Seiten */
+add('stunde', '📅', 'Stunde (Planer)', 'Klasse', b => {
+  let day = isoToday();
+  const draw = () => {
+    const pkg = PL.pkg;
+    if (!pkg) {
+      b.innerHTML = `<div class="hint" style="max-width:360px;margin:0">Noch kein Stundenpaket vom LehrerPlaner. Im Planer unter <b>Meine Tafel</b> auf „Stunden senden“ klicken (das passiert auch beim Start des Planers).</div><div class="row"><button class="rl">Neu einlesen</button></div>`;
+    } else {
+      const L = (pkg.stunden || []).filter(l => l.datum === day).sort((a, c) => (a.stunde || 0) - (c.stunde || 0));
+      b.innerHTML = `<div class="row" style="margin-top:0"><input type="date" class="dd" value="${day}"><button class="rl" title="Paket neu einlesen">↻</button></div>`
+        + (L.length ? L.map((l, i) => `<button class="sl" data-i="${i}" style="width:100%;margin-top:6px;justify-content:flex-start;text-align:left;flex-direction:column;align-items:flex-start;padding:8px 14px;height:auto"><b>${l.stunde ? l.stunde + '. Std ' : ''}${esc(l.von || '')}${l.bis ? '–' + esc(l.bis) : ''} · ${esc(l.klasse)} ${esc(l.fach || '')}</b><small>${(l.transparenz || []).length} Fahrplan-Schritte · ${(l.tafelbild || []).length} Tafelbild-Zeilen${PL.lesson && PL.lesson.id === l.id ? ' · geladen' : ''}</small></button>`).join('') : '<div class="hint" style="margin-top:8px">Keine Stunden an diesem Tag im Paket.</div>')
+        + `<div class="hint">Es werden nur Stundentransparenz und Tafelbild übernommen. Stand: ${esc(String(pkg.erzeugt || '').replace('T', ' ').slice(0, 16))}</div>`;
+      b.querySelector('.dd').onchange = e => { day = e.target.value || day; draw() };
+      b.querySelectorAll('.sl').forEach(x => x.onclick = () => loadLesson(L[+x.dataset.i], false));
+    }
+    b.querySelector('.rl').onclick = async () => {
+      const t = window.planer && window.planer.paketLesen ? await window.planer.paketLesen() : null;
+      if (t) { PL.pkg = t; draw(); toast('Stundenpaket eingelesen') } else toast('Kein Stundenpaket gefunden', 3500);
+    };
+  };
+  draw();
+});
+
 /* Seiten-Vorlagen: aktuelle Seite als Vorlage merken, später wieder einfügen */
 add('seitenvorlagen', '📑', 'Seiten-Vorlagen', 'Material', b => {
   const draw = () => {
@@ -804,25 +910,105 @@ buildGeo(); window.__rebuildTri = buildGeo;
   $('#spotb').onclick = () => { hidePops(); open(true) };
 })();
 
+/* Kurze Einführung (beim ersten Start; später über Hilfsmittel → Einführung) */
+window.__intro = (force) => {
+  if (document.getElementById('intro')) return;
+  if (!force && store.get('intro', false)) return;
+  const steps = [
+    ['pen', 'Schreiben', 'Stift, Marker, Text und Formen links in der Leiste. Farbe und Stärke erscheinen nur dort, wo sie passen.'],
+    ['plus', 'Seiten', 'Unten in der Leiste: neue Seite, blättern, löschen. Die Übersicht zeigt alle Seiten auf einen Blick.'],
+    ['widgets', 'Widgets', 'Timer, Würfel, „Wer ist dran?“, Bildkarten und mehr – in Reitern nach Themen sortiert.'],
+    ['wrench', 'Hilfsmittel', 'Lineal, Geodreieck, Lupe und Abdeckung. Hier lassen sich auch Beschriftungen für die Leiste einschalten.']
+  ];
+  const el = h('<div id="intro"><div class="ic-card"><h2>Willkommen bei Meine Tafel</h2><p class="sub">Vier Dinge zum Start:</p><div class="ic-grid">'
+    + steps.map(([i, t, x]) => '<div class="ic-s"><span class="t">' + ic(i, 22) + '</span><div><b>' + t + '</b><span>' + x + '</span></div></div>').join('')
+    + '</div><button class="ic-go">Los geht’s</button></div></div>');
+  const done = () => { store.set('intro', true); el.remove() };
+  el.querySelector('.ic-go').onclick = done;
+  el.addEventListener('click', e => { if (e.target === el) done() });
+  document.body.appendChild(el);
+};
+setTimeout(() => { if (!navigator.webdriver) window.__intro(false) }, 900);
+
 /* ---------- Menü in der Leiste ---------- */
-const GROUPS = ['Klasse', 'Zeit', 'Werkzeuge', 'Material'];
+/* Reiter (Gruppen) mit Farbe und Symbol; Zuordnung und Symbol jedes Widgets */
+const GRP = [
+  ['fav', 'Favoriten', 'star', '#f59e0b'],
+  ['klasse', 'Klasse', 'users', '#6366f1'],
+  ['zufall', 'Zufall', 'shuffle', '#ec4899'],
+  ['zeit', 'Zeit', 'clock', '#f97316'],
+  ['mathe', 'Mathe', 'calc', '#3b82f6'],
+  ['deutsch', 'Deutsch', 'abc', '#22c55e'],
+  ['hilfsmittel', 'Hilfsmittel', 'wrench', '#14b8a6'],
+  ['vorlagen', 'Vorlagen', 'layout', '#8b5cf6']
+];
+const META = {
+  stunde: ['klasse', 'calendar'], symbole: ['klasse', 'images'], ampel: ['klasse', 'traffic'], punkte: ['klasse', 'trophy'], abstimmung: ['klasse', 'chart'], geburtstag: ['klasse', 'cake'],
+  zufall: ['zufall', 'target'], gruppen: ['zufall', 'users'], wuerfel: ['zufall', 'dice'],
+  zeitscheibe: ['zeit', 'hourglass'], stoppuhr: ['zeit', 'timer'], countdown: ['zeit', 'flag'], stundenplan: ['zeit', 'table'], uhr: ['zeit', 'clock'],
+  zahlen: ['mathe', 'dots'], rechner: ['mathe', 'calc'],
+  anlaut: ['deutsch', 'abc'],
+  laerm: ['hilfsmittel', 'volume'], qr: ['hilfsmittel', 'qr'], kamera: ['hilfsmittel', 'camera'], einbetten: ['hilfsmittel', 'globe'], links: ['hilfsmittel', 'link'], sticker: ['hilfsmittel', 'star'],
+  vorlagen: ['vorlagen', 'layout'], seitenvorlagen: ['vorlagen', 'bookmark'], gehirnpause: ['vorlagen', 'pulse'], hilfe: ['vorlagen', 'help']
+};
+WG.forEach(d => { const m = META[d.id]; if (m) { d.group = m[0]; d.icon = m[1] } else { d.group = d.group === 'Zeit' ? 'zeit' : 'hilfsmittel'; d.icon = 'layout' } });
+// Linien-Symbole (24×24, Strichstärke 2) – einheitlicher Stil
+Object.assign(WICONS, {
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  shuffle: '<path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  calc: '<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M16 14h.01M12 18h.01M8 18h.01M16 18h.01"/>',
+  abc: '<path d="M21 14h-5"/><path d="M16 16v-3.5a2.5 2.5 0 0 1 5 0V16"/><path d="M4.5 13h6"/><path d="m3 16 4.5-9 4.5 9"/>',
+  wrench: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  layout: '<rect width="18" height="7" x="3" y="3" rx="1"/><rect width="9" height="7" x="3" y="14" rx="1"/><rect width="5" height="7" x="16" y="14" rx="1"/>',
+  calendar: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>',
+  images: '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
+  traffic: '<rect x="7" y="2" width="10" height="20" rx="3"/><circle cx="12" cy="7" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="17" r="1.4"/>',
+  trophy: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+  chart: '<path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/>',
+  cake: '<path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20"/><path d="M7 8v3M12 8v3M17 8v3"/><path d="M7 4h.01M12 4h.01M17 4h.01"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  dice: '<rect width="18" height="18" x="3" y="3" rx="3"/><path d="M8 8h.01M16 8h.01M8 16h.01M16 16h.01M12 12h.01"/>',
+  hourglass: '<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.41L12 12l-4.41 4.42A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.41L12 12l4.41-4.42A2 2 0 0 0 17 6.17V2"/>',
+  timer: '<line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/>',
+  flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>',
+  table: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M12 3v18"/>',
+  dots: '<circle cx="6" cy="7" r="2"/><circle cx="12" cy="7" r="2"/><circle cx="18" cy="7" r="2"/><circle cx="6" cy="17" r="2"/><circle cx="12" cy="17" r="2"/><circle cx="18" cy="17" r="2"/>',
+  volume: '<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>',
+  qr: '<rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01M12 3h.01M12 16v.01M16 12h1M21 12v.01M12 21v-1"/>',
+  camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+  globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  bookmark: '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>',
+  pulse: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>',
+  help: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'
+});
+
 ICONS.widgets = '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><path d="M17.5 14v7"/><path d="M14 17.5h7"/>';
-const pop = h(`<div class="pop" id="widpop"><input class="ws" type="search" placeholder="Widget suchen …" aria-label="Widget suchen"><div class="wlist"></div><div class="wlay"></div></div>`);
-const itemHtml = d => `<button class="wi" data-w="${d.id}"><span class="fv ${store.get('favs', []).includes(d.id) ? 'on' : ''}" data-fav="${d.id}" role="button" aria-label="Favorit" title="Als Favorit merken">★</span><span class="em">${d.em}</span><small>${esc(d.title)}</small></button>`;
+const pop = h(`<div class="pop" id="widpop"><div class="wsearch">${wic('search', 18)}<input class="ws" type="search" placeholder="Widget suchen …" aria-label="Widget suchen"></div><div class="wtabs" role="tablist"></div><div class="wlist"></div><details class="wlay"></details></div>`);
+const tile = (name, g, size = 46) => `<span class="wt" style="--g:${g};--s:${size}px">${wic(name, Math.round(size * .5))}</span>`;
+const grpOf = id => GRP.find(g => g[0] === id) || GRP[1];
+const itemHtml = d => `<button class="wi on0" data-w="${d.id}"><span class="fv ${store.get('favs', []).includes(d.id) ? 'on' : ''}" data-fav="${d.id}" role="button" aria-label="Favorit" title="Als Favorit merken">★</span>${tile(d.icon, grpOf(d.group)[3])}<small>${esc(d.title)}</small></button>`;
+let curTab = store.get('wtab', 'klasse');
 function renderMenu() {
   const q = pop.querySelector('.ws').value.trim().toLowerCase(), favs = store.get('favs', []), rec = store.get('recent', []);
   const by = ids => ids.map(id => WG.find(d => d.id === id)).filter(Boolean);
+  if (!GRP.some(g => g[0] === curTab)) curTab = 'klasse';
+  pop.querySelector('.wtabs').innerHTML = GRP.map(([id, n, ic2, col]) => `<button class="wtab ${!q && id === curTab ? 'on' : ''}" role="tab" data-tab="${id}" style="--g:${col}">${tile(ic2, !q && id === curTab ? 'rgba(255,255,255,.28)' : col, 26)}<span>${n}</span></button>`).join('');
   let html;
-  if (q) { const m = WG.filter(d => (d.title + ' ' + d.group).toLowerCase().includes(q)); html = m.length ? `<div class="wgrid">${m.map(itemHtml).join('')}</div>` : '<div class="hint" style="padding:8px">Kein Widget gefunden.</div>' }
-  else {
-    const fav = by(favs), rest = by(rec).filter(d => !favs.includes(d.id)).slice(0, 4);
-    html = (fav.length ? `<h4>★ Favoriten</h4><div class="wgrid">${fav.map(itemHtml).join('')}</div>` : '') + (rest.length ? `<h4>Zuletzt benutzt</h4><div class="wgrid">${rest.map(itemHtml).join('')}</div>` : '')
-      + GROUPS.map(g => `<h4>${g}</h4><div class="wgrid">${WG.filter(d => d.group === g).map(itemHtml).join('')}</div>`).join('');
-  }
+  if (q) { const m = WG.filter(d => (d.title + ' ' + grpOf(d.group)[1]).toLowerCase().includes(q)); html = m.length ? `<div class="wgrid">${m.map(itemHtml).join('')}</div>` : '<div class="hint" style="padding:10px">Kein Widget gefunden.</div>' }
+  else if (curTab === 'fav') {
+    const fav = by(favs), rest = by(rec).filter(d => !favs.includes(d.id)).slice(0, 8);
+    html = (fav.length ? `<div class="wgrid">${fav.map(itemHtml).join('')}</div>` : '<div class="hint" style="padding:10px;max-width:none">Noch keine Favoriten. Tippe bei einem Widget auf den Stern ★, dann steht es hier.</div>')
+      + (rest.length ? `<h4>Zuletzt benutzt</h4><div class="wgrid">${rest.map(itemHtml).join('')}</div>` : '');
+  } else html = `<div class="wgrid">${WG.filter(d => d.group === curTab).map(itemHtml).join('')}</div>`;
   pop.querySelector('.wlist').innerHTML = html;
   // Anordnungen: offene Widgets samt Position speichern und mit einem Klick wieder öffnen
-  const L = store.get('layouts', []);
-  pop.querySelector('.wlay').innerHTML = `<h4 style="flex-basis:100%">Anordnungen</h4>${L.map((l, i) => `<button data-lay="${i}" title="Anordnung öffnen">${esc(l.n)}</button><button data-laydel="${i}" aria-label="Anordnung löschen" title="Löschen" style="padding:0 8px">${ic('close', 14)}</button>`).join('')}<input class="ln" placeholder="Name, z. B. Morgenkreis"><button class="ls" title="Aktuell geöffnete Widgets als Anordnung speichern">Speichern</button>`;
+  const L = store.get('layouts', []), lay = pop.querySelector('.wlay'), was = lay.open;
+  lay.innerHTML = `<summary>Anordnungen${L.length ? ' (' + L.length + ')' : ''}</summary><div class="wlrow">${L.map((l, i) => `<button data-lay="${i}" title="Anordnung öffnen">${esc(l.n)}</button><button data-laydel="${i}" aria-label="Anordnung löschen" title="Löschen" style="padding:0 8px">${ic('close', 14)}</button>`).join('')}<input class="ln" placeholder="Name, z. B. Morgenkreis"><button class="ls" title="Aktuell geöffnete Widgets als Anordnung speichern">Speichern</button></div>`;
+  lay.open = was;
   menuState();
 }
 pop.querySelector('.ws').addEventListener('input', renderMenu);
@@ -865,6 +1051,7 @@ lgrp.addEventListener('contextmenu', e => {   // Adresse ändern (nur auf diesem
 $('#bar').appendChild(pop);
 const menuState = () => pop.querySelectorAll('[data-w]').forEach(x => x.classList.toggle('on', !!openW[x.dataset.w]));
 pop.addEventListener('click', e => {
+  const tb = e.target.closest('[data-tab]'); if (tb) { curTab = tb.dataset.tab; store.set('wtab', curTab); pop.querySelector('.ws').value = ''; renderMenu(); return }
   const fv = e.target.closest('[data-fav]');
   if (fv) { e.stopPropagation(); const f = store.get('favs', []), id = fv.dataset.fav, i = f.indexOf(id); if (i >= 0) f.splice(i, 1); else f.push(id); store.set('favs', f); renderMenu(); return }
   const lo = e.target.closest('[data-lay]'); if (lo) { pop.classList.remove('show'); loadLayout(+lo.dataset.lay); return }
@@ -885,8 +1072,131 @@ document.querySelectorAll('#bar>.grp>button').forEach(b => {
 
 /* ---------- Verknüpfung mit dem LehrerPlaner (nur in der Windows-App) ---------- */
 const ctx = { klasse: '', thema: '' };
+const PL = { pkg: null, lesson: null };             // Stundenpaket des Planers, aktuell geladene Stunde
+const RES = { dran: [], gruppen: null };            // Ergebnisse dieser Stunde (für die Rückmeldung an den Planer)
 const showStunde = () => { window.__kopfText = [ctx.klasse, ctx.thema].filter(Boolean).join(' · '); dirty = true; };
 const waitFor = async (fn, ms = 8000) => { const t0 = Date.now(); while (!fn() && Date.now() - t0 < ms) await new Promise(r => setTimeout(r, 100)); return fn() };
+const inkC = () => S.theme === 'board' ? '#ffffff' : '#111111';
+const greyC = () => S.theme === 'board' ? '#c3cad6' : '#6b7280';
+const TX = (x, y, s, size, c) => ({ t: 'text', x, y, s: String(s), c: c || inkC(), size, w: 1 });
+const wrapText = (t, n, max = 9) => { const out = []; String(t || '').split(/\r?\n/).forEach(p => { let l = ''; p.split(/\s+/).filter(Boolean).forEach(wd => { if ((l + ' ' + wd).trim().length > n) { out.push(l); l = wd } else l = (l + ' ' + wd).trim() } ); out.push(l) }); return out.filter((l, i, a) => l || (i && a[i - 1])).slice(0, max) };
+const isoToday = () => { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) };
+const toMin = s => { const m = /(\d{1,2}):(\d{2})/.exec(s || ''); return m ? +m[1] * 60 + +m[2] : null };
+const fmtDate = iso => { const [y, m, d] = String(iso).split('-'); return `${d}.${m}.${y}` };
+
+/* Welche Stunde läuft jetzt? (Datum und Uhrzeit; 10 Minuten vor Beginn zählt schon) */
+function pickLesson(pkg) {
+  const now = new Date(), min = now.getHours() * 60 + now.getMinutes(), today = (pkg.stunden || []).filter(l => l.datum === isoToday());
+  return today.find(l => { const a = toMin(l.von), b = toMin(l.bis); return a != null && b != null && min >= a - 10 && min <= b }) || null;
+}
+
+/* Bild einer Karte: zuerst der Kartensatz der Tafel (per Name), sonst die Datei aus dem Planer */
+async function cardImage(t) {
+  let src = null;
+  const K = await loadKarten();
+  const nm = String(t.karte || '').trim().toLowerCase();
+  const k = K && nm && (K.find(x => x.n.toLowerCase() === nm && (x.k === 'sozial' || x.k === 'methoden')) || K.find(x => x.n.toLowerCase() === nm));
+  if (k) src = await karteData(k.f);
+  if (!src && t.datei && window.planer && window.planer.datei) src = await window.planer.datei(t.datei);
+  if (!src) return null;
+  return await new Promise(res => { const im = new Image(); im.onload = () => res({ src, w: im.naturalWidth, h: im.naturalHeight }); im.onerror = () => res(null); im.src = src });
+}
+
+/* Seiten einer Stunde: übernommen werden nur die Stundentransparenz („Unser Fahrplan heute:“) und das Tafelbild.
+   Alle anderen Planungsinformationen (Ziel, Phasen, Hausaufgabe, Material …) bleiben im Planer. */
+const FAHRPLAN_FARBEN = ['#e03131', '#1f6feb', '#2f9e44', '#f08c00', '#9c36b5', '#0ca678', '#e64980', '#1c3d8f', '#8d5524', '#15aabf', '#82c91e', '#d9a400'];
+
+/* Übersichtliche Fahrplan-Seite: je Schritt eine Zeile  ① → Information → Bildkarte  (ab 5 Schritten in zwei Spalten) */
+async function fahrplanPage(tp) {
+  const grey = greyC(), objs = [];
+  objs.push(TX(100, 78, 'Unser Fahrplan heute:', 92));
+  objs.push({ t: 'line', x1: 100, y1: 196, x2: W - 100, y2: 196, c: grey, w: 4 });
+  const n = tp.length, two = n > 6, rows = two ? Math.ceil(n / 2) : n;
+  const top = 214, rh = Math.min(two ? 200 : 185, (H - top - 30) / rows), colW = two ? (W - 200 - 60) / 2 : W - 200, infoSize = Math.round(Math.max(30, Math.min(two ? 44 : 60, rh * (two ? .27 : .36))));
+  for (let i = 0; i < n; i++) {
+    const t = tp[i], col = two ? (i < rows ? 0 : 1) : 0, r = two ? (i < rows ? i : i - rows) : i;
+    const x = 100 + col * (colW + 60), y = top + r * rh, cy = y + rh / 2, c = FAHRPLAN_FARBEN[i % FAHRPLAN_FARBEN.length];
+    // Nummer im farbigen Kreis
+    const R = Math.min(50, rh / 2 - 12), ns = Math.round(R * 1.35), nw = String(i + 1).length * .58 * ns;
+    objs.push({ t: 'ellipse', x1: x, y1: cy - R, x2: x + 2 * R, y2: cy + R, c, w: 9 });
+    objs.push(TX(x + R - nw / 2, cy - ns * .56, i + 1, ns, c));
+    // Bildkarte rechts
+    const im = await cardImage(t);
+    const ch = rh - 20, ratio = im ? im.w / im.h : 1.5;
+    let cw = ch * ratio; const cmax = colW * (two ? .28 : .3); if (cw > cmax) cw = cmax;
+    const chh = cw / ratio, cardX = x + colW - cw;
+    if (im) { const id = uid(); S.images[id] = im.src; objs.push({ t: 'img', id, x: cardX, y: cy - chh / 2, w: cw, h: chh }) }
+    // Pfeil → Information → Pfeil → Karte
+    const a1 = x + 2 * R + 16, infoX = a1 + 78, endX = (im ? cardX - 86 : x + colW) - 10;
+    objs.push({ t: 'arrow', x1: a1, y1: cy, x2: a1 + 58, y2: cy, c: grey, w: 5 });
+    if (im) objs.push({ t: 'arrow', x1: cardX - 74, y1: cy, x2: cardX - 14, y2: cy, c: grey, w: 5 });
+    const info = String(t.notiz || '').trim() || String(t.karte || '').trim();
+    if (info) {
+      const chars = Math.max(10, Math.floor((endX - infoX) / (infoSize * .52))), maxL = Math.max(1, Math.floor((rh - 16) / (infoSize * 1.25)));
+      const ls = wrapText(info, chars, maxL);
+      objs.push(TX(infoX, cy - ls.length * infoSize * 1.25 / 2 + 2, ls.join('\n'), infoSize));
+    }
+    if (r < rows - 1) objs.push({ t: 'line', x1: x, y1: y + rh, x2: x + colW, y2: y + rh, c: grey, w: 2 });
+  }
+  return mkPage('plain', objs);
+}
+
+async function lessonPages(l) {
+  const pages = [];
+  const tp = (Array.isArray(l.transparenz) ? l.transparenz : []).filter(t => String(t.karte || '').trim() || String(t.notiz || '').trim());
+  if (tp.length) pages.push(await fahrplanPage(tp.slice(0, 12)));
+  // Tafelbild: Zeile für Zeile mit Abdeckungen zum Aufdecken
+  const tb = (l.tafelbild || []).filter(x => String(x).trim());
+  for (let i = 0; i < tb.length; i += 8) {
+    const objs = [TX(110, 80, i ? 'Tafelbild (Fortsetzung)' : 'Tafelbild', 76)], chunk = tb.slice(i, i + 8);
+    chunk.forEach((line, k) => {
+      const y = 230 + k * 105;
+      objs.push(TX(140, y, wrapText(line, 70, 1)[0] || line, 54));
+      if (i + k > 0) objs.push({ t: 'cover', x1: 100, y1: y - 12, x2: W - 100, y2: y + 90, c: '#33407a', w: 1 });
+    });
+    pages.push(mkPage('plain', objs));
+  }
+  return pages;
+}
+
+function appendPages(pages) {
+  if (!pages.length) return;
+  const first = (S.pages.length === 1 && !P().objs.length && !P().bgImg) ? 0 : S.pages.length;
+  if (first === 0) S.pages = pages; else S.pages.push(...pages);
+  setPage(first);
+}
+
+/* Stunde laden: Klasse, anwesende Kinder (für „Wer ist dran?“ und „Gruppen“), Fahrplan-Seite und Tafelbild */
+async function loadLesson(l, auto) {
+  PL.lesson = l; RES.dran = []; RES.gruppen = null;
+  const kl = ((PL.pkg || {}).klassen || {})[l.klasse] || {};
+  ctx.klasse = l.klasse || ''; ctx.thema = ''; showStunde();
+  const names = (l.anwesend && l.anwesend.length ? l.anwesend : kl.vornamen) || [];
+  if (names.length) store.set('klasse', names);
+  { const T = store.get('punkte', null); if (T) store.set('punkte', T.map(t => ({ n: t.n, s: 0 }))); const O = store.get('abstimmung', null); if (O) store.set('abstimmung', O.map(o => ({ n: o.n, c: 0 }))) }
+  Object.keys(openW).forEach(closeW);
+  appendPages(await lessonPages(l));
+  store.set('lastLesson', l.id);
+  toast((auto ? 'Stunde erkannt: ' : 'Stunde geladen: ') + [l.stunde ? l.stunde + '. Std.' : '', l.klasse, l.fach].filter(Boolean).join(' ') + (names.length ? ' – ' + names.length + ' Kinder' : ''), 4500);
+  refreshStundeWidget();
+}
+
+function refreshStundeWidget() { if (openW.stunde) { closeW('stunde'); const d = WG.find(x => x.id === 'stunde'); if (d) openWidget(d) } }
+
+/* Rückmeldung an den Planer: wer war dran, Punkte, Abstimmung, Gruppen */
+let lastRueck = '';
+function sendRueck(force) {
+  if (!PL.lesson || !window.planer || !window.planer.rueck) return;
+  const T = (store.get('punkte', null) || []).filter(t => t.s), O = (store.get('abstimmung', null) || []).filter(o => o.c);
+  const o = { id: PL.lesson.id, datum: PL.lesson.datum, stunde: PL.lesson.stunde, klasse: PL.lesson.klasse, fach: PL.lesson.fach, dran: RES.dran, gruppen: RES.gruppen, punkte: T, abstimmung: O, zeit: new Date().toISOString() };
+  if (!o.dran.length && !o.gruppen && !T.length && !O.length) return;
+  const sig = JSON.stringify([o.dran, o.gruppen, T, O]);
+  if (!force && sig === lastRueck) return;
+  lastRueck = sig; window.planer.rueck(o);
+}
+setInterval(() => sendRueck(false), 90000);
+addEventListener('beforeunload', () => sendRueck(false));
+
 window.__planer = {
   async apply(o) {
     await waitFor(() => window.__tafel);
@@ -896,30 +1206,39 @@ window.__planer = {
     }
     ctx.klasse = o.klasse || ctx.klasse; ctx.thema = o.thema || '';
     showStunde();
-    if (Array.isArray(o.phasen) && o.phasen.length) {   // Stundenphasen aus dem Planer: je Phase eine Seite
-      const ink = S.theme === 'board' ? '#ffffff' : '#111111';
-      const wrapLines = (t, n) => { const out = []; String(t || '').split(/\r?\n/).forEach(p => { let l = ''; p.split(/\s+/).filter(Boolean).forEach(wd => { if ((l + ' ' + wd).trim().length > n) { out.push(l); l = wd } else l = (l + ' ' + wd).trim() }); out.push(l) }); return out.filter((l, i, a) => l || (i && a[i - 1])).slice(0, 9) };
-      const pages = o.phasen.map(([titel, text]) => {
-        const objs = [{ t: 'text', x: 110, y: 130, s: String(titel), c: ink, size: 100, w: 1 }];
-        const ls = wrapLines(text, 52); if (ls.length) objs.push({ t: 'text', x: 110, y: 290, s: ls.join('\n'), c: ink, size: 52, w: 1 });
-        return mkPage('plain', objs);
+    if (Array.isArray(o.phasen) && o.phasen.length) appendPages(o.phasen.map(([titel, text]) => mkPage('plain', [TX(110, 130, titel, 100), TX(110, 290, wrapText(text, 52).join('\n'), 52)])));
+    if (Array.isArray(o.gruppen) && o.gruppen.length) {   // fertige Gruppeneinteilung aus dem Planer: eine Seite mit Karten je Gruppe
+      const COL = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6', '#f97316'], g = o.gruppen, per = g.length <= 4 ? g.length : g.length <= 6 ? 3 : 4, cw = Math.min(420, (1700 - (per - 1) * 30) / per);
+      const objs = [TX(110, 90, 'Gruppen', 84)]; RES.gruppen = g;
+      g.forEach((names, i) => {
+        const x = 110 + (i % per) * (cw + 30), y = 250 + Math.floor(i / per) * 380;
+        objs.push({ t: 'rect', x1: x, y1: y, x2: x + cw, y2: y + 340, c: COL[i % COL.length], w: 8 }, TX(x + 20, y + 14, 'Gruppe ' + (i + 1), 42, COL[i % COL.length]), TX(x + 20, y + 84, names.slice(0, 7).join('\n'), 40));
       });
-      const first = (S.pages.length === 1 && !P().objs.length && !P().bgImg) ? 0 : S.pages.length;
-      if (first === 0) S.pages = pages; else S.pages.push(...pages);
-      setPage(first);
+      appendPages([mkPage('plain', objs)]);
     }
     if (o.tafel) { try { restore(o.tafel); toast('Tafel aus dem Planer geöffnet') } catch (e) { toast('Tafel konnte nicht geöffnet werden', 4000) } }
     else if (o.klasse) toast('Klasse ' + o.klasse + (o.namen ? ' – ' + o.namen.length + ' Kinder geladen' : ''), 3500);
+  },
+  /* Stundenpaket des Planers (Datei Austausch\stunden.json): bestimmte Stunde (id) laden oder nach Datum und Uhrzeit wählen */
+  async paket(pkg, id) {
+    await waitFor(() => window.__tafel);
+    PL.pkg = pkg; refreshStundeWidget();
+    let l = id ? (pkg.stunden || []).find(s => s.id === id) : null, auto = false;
+    if (!l) { l = pickLesson(pkg); auto = true }
+    if (!l) { if (auto && (pkg.stunden || []).some(s => s.datum === isoToday())) { toast('Gerade läuft keine Stunde – Stundenliste öffnen: Widgets → Stunde', 5000) } return }
+    if (auto && store.get('lastLesson', '') === l.id) { PL.lesson = l; ctx.klasse = l.klasse; ctx.thema = ""; showStunde(); return }   // schon geladen (z. B. nach Neustart)
+    await loadLesson(l, auto);
   }
 };
 if (window.planer && window.planer.speichern) {
-  // In der Windows-App speichert „Speichern“ direkt im Tafel-Ordner (Dokumente\MeineTafel\Tafelbilder\<Klasse>), wo der LehrerPlaner sie findet
+  // In der Windows-App speichert „Speichern“ direkt im Tafel-Ordner (Dokumente\MeineTafel\Tafelbilder\<Klasse>), wo der LehrerPlaner es der Stunde zuordnet
   $('#fsave').onclick = async () => {
     $('#filepop').classList.remove('show');
     const c = document.createElement('canvas'); c.width = W; c.height = H; render(c.getContext('2d'), P(), false);
-    const name = ctx.thema || 'Tafel';
-    const r = await window.planer.speichern({ klasse: ctx.klasse, name, json: serialize(), png: c.toDataURL('image/png') });
-    toast(r.ok ? 'Gespeichert: Dokumente\\MeineTafel\\Tafelbilder\\' + (ctx.klasse || 'Allgemein') : 'Speichern nicht möglich: ' + r.fehler, 4500);
+    const name = ctx.thema || 'Tafel', L = PL.lesson;
+    const r = await window.planer.speichern({ klasse: ctx.klasse, name, json: serialize(), png: c.toDataURL('image/png'), stunde: L ? { id: L.id, datum: L.datum, stunde: L.stunde, klasse: L.klasse, fach: L.fach } : null });
+    toast(r.ok ? 'Gespeichert: Dokumente\\MeineTafel\\Tafelbilder\\' + (ctx.klasse || 'Allgemein') + (L ? ' – wird im Planer der Stunde zugeordnet' : '') : 'Speichern nicht möglich: ' + r.fehler, 4500);
+    sendRueck(true);
   };
 }
 })();
