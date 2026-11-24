@@ -156,6 +156,9 @@ html.surround-dark #widpop{background:#1e2234}
 .fete canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .fete div{position:relative;color:#fff;font-size:min(8vw,110px);font-weight:800;line-height:1.15;text-shadow:0 6px 30px rgba(0,0,0,.6);padding:0 5%}
 .tmr{display:flex;gap:10px;font-size:14px;padding:3px 0}.tmr b{min-width:104px}
+.gl{max-height:420px;overflow-y:auto;touch-action:pan-y}
+.gr{display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--w-soft);margin-top:6px}
+.gr .gt{flex:1;min-width:260px}.gr .gt b{display:block;font-size:15px;word-break:break-all}.gr .gt small{color:var(--w-mute);font-size:12.5px}
 /* Einführung beim ersten Start */
 #intro{position:fixed;inset:0;z-index:200;background:rgba(20,26,48,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px}
 #intro .ic-card{background:#fff;color:#252b3b;border-radius:26px;padding:28px 30px 24px;max-width:720px;box-shadow:0 24px 70px rgba(10,15,40,.35);animation:wgin .25s ease-out}
@@ -242,7 +245,7 @@ function openWidget(def) {
       w.style.left = clamp(ev.clientX - hr.left - dx, 80 - r.width, host.clientWidth - 80) + 'px';
       w.style.top = clamp(ev.clientY - hr.top - dy, 0, host.clientHeight - 44) + 'px';
     };
-    const up = () => { hd.removeEventListener('pointermove', mv); hd.removeEventListener('pointerup', up); hd.removeEventListener('pointercancel', up); hd.style.cursor = ''; savePos() };
+    const up = () => { hd.removeEventListener('pointermove', mv); hd.removeEventListener('pointerup', up); hd.removeEventListener('pointercancel', up); hd.style.cursor = ''; if (store.get('raster', false)) { w.style.left = Math.round(parseFloat(w.style.left) / 40) * 40 + 'px'; w.style.top = Math.round(parseFloat(w.style.top) / 40) * 40 + 'px' } savePos() };
     hd.addEventListener('pointermove', mv); hd.addEventListener('pointerup', up); hd.addEventListener('pointercancel', up);
   });
   // Größe ändern (skaliert den Inhalt)
@@ -533,12 +536,13 @@ add('wuerfel', '🎲', 'Würfel', 'Werkzeuge', b => {
 
 /* Lärmpegel */
 add('laerm', '🔊', 'Lärmpegel', 'Werkzeuge', b => {
-  b.innerHTML = `<div class="lm-bar"><div class="lm-fill"></div><div class="lm-th"></div></div><div class="lm-st">Mikrofon aus</div><div class="row c"><button class="big go">🎤 Start</button><label class="lab">Grenze <input type="range" class="th" min="15" max="95" value="60"></label></div><div class="hint">Das Mikrofon wird nur für die Anzeige genutzt, es wird nichts aufgenommen oder gesendet.</div>`;
+  b.innerHTML = `<div class="lm-am"><i></i><i></i><i></i></div><div class="lm-bar"><div class="lm-fill"></div><div class="lm-th"></div></div><div class="lm-st">Mikrofon aus</div><div class="row c"><button class="big go">🎤 Start</button><label class="lab">Grenze <input type="range" class="th" min="15" max="95" value="60"></label></div><div class="hint">Das Mikrofon wird nur für die Anzeige genutzt, es wird nichts aufgenommen oder gesendet.</div>`;
   const fill = b.querySelector('.lm-fill'), thEl = b.querySelector('.lm-th'), st = b.querySelector('.lm-st'), go = b.querySelector('.go'), th = b.querySelector('.th');
   const win = b.closest('.wg');
+  const lampEls = b.querySelectorAll('.lm-am i'), lamps = n => lampEls.forEach((x, i) => x.classList.toggle('on', i === n));
   let ac = null, stream = null, raf = 0, lvl = 0, over = 0, cal = 0, calSum = 0;
   const setTh = () => thEl.style.left = th.value + '%'; th.oninput = setTh; setTh();
-  const stop = () => { cancelAnimationFrame(raf); try { stream && stream.getTracks().forEach(t => t.stop()) } catch (e) {} try { ac && ac.close() } catch (e) {} ac = stream = null; fill.style.width = '0'; st.textContent = 'Mikrofon aus'; win.classList.remove('alarm'); go.textContent = '🎤 Start' };
+  const stop = () => { cancelAnimationFrame(raf); try { stream && stream.getTracks().forEach(t => t.stop()) } catch (e) {} try { ac && ac.close() } catch (e) {} ac = stream = null; fill.style.width = '0'; st.textContent = 'Mikrofon aus'; win.classList.remove('alarm'); go.textContent = '🎤 Start'; lampEls.forEach(x => x.classList.remove('on')) };
   go.onclick = async () => {
     if (ac) { stop(); return }
     try {
@@ -559,6 +563,7 @@ add('laerm', '🔊', 'Lärmpegel', 'Werkzeuge', b => {
           const loud = over > 20;
           win.classList.toggle('alarm', loud);
           st.textContent = loud ? '🔴 Zu laut!' : lvl > +th.value * .75 ? '🟡 Etwas laut' : '🟢 Schön leise';
+          lamps(loud ? 2 : lvl > +th.value * .75 ? 1 : 0);
         }
         raf = requestAnimationFrame(tick);
       };
@@ -913,6 +918,31 @@ buildGeo(); window.__rebuildTri = buildGeo;
   $('#spotb').onclick = () => { hidePops(); open(true) };
 })();
 
+/* Gespeicherte Tafeln (Windows-App): Liste mit Datum, Stunde, Fach, Thema; Öffnen und im Ordner zeigen */
+add('gespeichert', '💾', 'Gespeicherte Tafeln', 'klasse', b => {
+  if (!(window.planer && window.planer.tafelnListe)) { b.innerHTML = '<div class="hint" style="margin:0;max-width:320px">Die Liste der gespeicherten Tafeln gibt es nur in der Windows-App.</div>'; return }
+  b.innerHTML = '<div class="row" style="margin-top:0"><input class="gs" type="search" placeholder="Suchen (Datum, Fach, Thema) …" style="flex:1;min-width:280px"><button class="rl" title="Aktualisieren">↻</button></div><div class="gl"></div><div class="hint" style="max-width:420px">Beim Beenden der App wird die Tafel automatisch gespeichert (Datum_Stunde_Fach_Thema). Der LehrerPlaner hängt die Bilder an die jeweilige Stunde.</div>';
+  const gl = b.querySelector('.gl'), gs = b.querySelector('.gs');
+  let items = [];
+  const draw = () => {
+    const q = gs.value.trim().toLowerCase(), list = items.filter(x => !q || (x.name + ' ' + x.klasse).toLowerCase().includes(q));
+    gl.innerHTML = list.length ? list.map((x, i) => '<div class="gr"><div class="gt"><b>' + esc(x.name) + '</b><small>' + esc(x.klasse) + ' · ' + new Date(x.zeit).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) + '</small></div><button data-o="' + items.indexOf(x) + '" class="big">Öffnen</button><button data-d="' + items.indexOf(x) + '" title="Im Ordner zeigen" aria-label="Im Ordner zeigen">' + ic('folderOpen', 18) + '</button></div>').join('') : '<div class="hint" style="margin:8px 0">Noch keine gespeicherten Tafeln.</div>';
+  };
+  const load = async () => { items = (await window.planer.tafelnListe()) || []; draw() };
+  gs.oninput = draw; b.querySelector('.rl').onclick = load;
+  gl.addEventListener('click', async e => {
+    const bo = e.target.closest('[data-o]'), bd = e.target.closest('[data-d]');
+    if (bd) { window.planer.tafelnOrdner(items[+bd.dataset.d].datei); return }
+    if (!bo) return;
+    const it = items[+bo.dataset.o];
+    if (S.pages.some(p => p.objs.length || p.bgImg) && !confirm('Die aktuelle Tafel wird durch „' + it.name + '“ ersetzt. Die aktuelle Tafel wird beim Beenden wieder automatisch gespeichert. Jetzt öffnen?')) return;
+    const t = await window.planer.tafelnOeffnen(it.datei);
+    if (!t) { toast('Datei konnte nicht geöffnet werden', 3500); return }
+    try { restore(t); toast('Geöffnet: ' + it.name, 3500) } catch (err) { toast('Datei konnte nicht geöffnet werden', 3500) }
+  });
+  load();
+});
+
 /* Kurze Einführung (beim ersten Start; später über Hilfsmittel → Einführung) */
 window.__intro = (force) => {
   if (document.getElementById('intro')) return;
@@ -933,6 +963,161 @@ window.__intro = (force) => {
 };
 setTimeout(() => { if (!navigator.webdriver) window.__intro(false) }, 900);
 
+/* ---------- Neue Widgets: Phase, Dienste, Murmelglas, Soundboard, Zeichenfeld, Meine Inhalte ---------- */
+{
+const st2 = document.createElement('style');
+st2.textContent = `
+.ph-big{text-align:center;padding:6px 0 12px}.ph-big .e{font-size:120px;line-height:1.1}.ph-big .l{font-size:40px;font-weight:800}
+.ph-g{display:grid;grid-template-columns:repeat(3,130px);gap:8px}.ph-g button{flex-direction:column;min-height:84px;gap:2px;font-size:14px;border-radius:20px}.ph-g button .e{font-size:30px}
+.ds-r{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:16px;background:var(--w-soft);margin-top:6px;min-width:340px}
+.ds-r b{flex:1;font-size:18px}.ds-r span{font-size:22px;font-weight:800;min-width:150px;text-align:right}
+.mg-wrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap;justify-content:center}
+.mg-jar{width:220px;height:270px;border:5px solid var(--w-line2);border-top-width:0;border-radius:0 0 70px 70px;display:flex;flex-wrap:wrap-reverse;align-content:flex-start;justify-content:center;padding:8px 8px 14px;gap:3px;background:var(--w-soft);position:relative}
+.mg-jar i{width:30px;height:30px;border-radius:50%;box-shadow:inset -4px -4px 8px rgba(0,0,0,.22),inset 4px 4px 8px rgba(255,255,255,.55);animation:mgin .35s cubic-bezier(.3,1.6,.5,1)}
+@keyframes mgin{from{transform:translateY(-120px) scale(.5);opacity:0}}
+.mg-n{font-size:42px;font-weight:800;text-align:center}
+.sb-g{display:grid;grid-template-columns:repeat(3,120px);gap:8px}.sb-g button{flex-direction:column;min-height:90px;border-radius:20px;font-size:14px}.sb-g button .e{font-size:32px}
+.zc2 canvas{background:#fff;border-radius:16px;touch-action:none;display:block;cursor:crosshair;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.zc2 .sw2{width:34px;height:34px;min-width:34px;min-height:34px;padding:0;border-radius:50%;border:3px solid transparent}.zc2 .sw2.on{border-color:var(--wa)}
+.mi-g{display:grid;grid-template-columns:repeat(3,128px);gap:8px;margin-top:8px}
+.mi-c{position:relative;min-height:84px;border-radius:16px;background:var(--w-soft);display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;font-size:14px;font-weight:600;overflow:hidden;cursor:pointer;word-break:break-word}
+.mi-c img{max-width:100%;max-height:100px;display:block;border-radius:8px}
+.mi-c .dx{position:absolute;right:3px;top:3px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;opacity:.0}.mi-c:hover .dx{opacity:1}
+.lm-am{display:flex;gap:10px;justify-content:center;margin:8px 0}.lm-am i{width:46px;height:46px;border-radius:50%;opacity:.18;transition:opacity .2s,box-shadow .2s}
+.lm-am i:nth-child(1){background:#22c55e}.lm-am i:nth-child(2){background:#f59e0b}.lm-am i:nth-child(3){background:#ef4444}
+.lm-am i.on{opacity:1;box-shadow:0 0 22px currentColor}.lm-am i:nth-child(1).on{color:#22c55e}.lm-am i:nth-child(2).on{color:#f59e0b}.lm-am i:nth-child(3).on{color:#ef4444}
+.wset label{display:flex;gap:10px;align-items:center;padding:7px 2px;font-size:14px;cursor:pointer}.wset input{width:18px;height:18px;accent-color:var(--accent)}
+.wset small{display:block;color:var(--mute);font-size:12px;margin:-3px 0 4px 28px}
+#favgrp:empty{display:none}
+html.calm *{animation:none!important;transition:none!important}
+html.autohide #bar{transition:opacity .35s,transform .35s}
+html.autohide #bar.idle{opacity:0;pointer-events:none;transform:translateX(-14px)}
+html.autohide.dock-r #bar.idle,html.autohide #bar.idle.r{transform:translateX(14px)}
+`;
+document.head.appendChild(st2);
+Object.assign(WICONS, {
+  presentation: '<path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/>',
+  userCheck: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/>',
+  jar: '<path d="M8 2h8"/><path d="M7 5h10"/><path d="M6 5v14a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V5"/><circle cx="10" cy="15" r="1"/><circle cx="14" cy="17" r="1"/><circle cx="13" cy="13" r="1"/>',
+  music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  pencil: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
+  box: '<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>'
+});
+
+/* Phase: große Anzeige der Sozialform */
+add('phase', '🧑‍🏫', 'Phase', 'Klasse', b => {
+  const PH = [['🧍', 'Einzelarbeit'], ['👫', 'Partnerarbeit'], ['👥', 'Gruppenarbeit'], ['🗣️', 'Plenum'], ['🤫', 'Stillarbeit'], ['🎤', 'Präsentation'], ['📖', 'Lesen'], ['✏️', 'Schreiben'], ['💬', 'Austausch']];
+  b.innerHTML = `<div class="ph-big"><div class="e"></div><div class="l"></div></div><div class="ph-g">${PH.map(([e, l], i) => `<button data-i="${i}"><span class="e">${e}</span>${l}</button>`).join('')}</div>`;
+  const pick = i => { b.querySelector('.e').textContent = PH[i][0]; b.querySelector('.l').textContent = PH[i][1]; b.querySelectorAll('.ph-g button').forEach((x, j) => x.classList.toggle('on', i === j)); store.set('phase', i) };
+  b.querySelectorAll('.ph-g button').forEach(x => x.onclick = () => pick(+x.dataset.i));
+  pick(store.get('phase', 0));
+});
+
+/* Dienste: aus der Klassenliste, rücken mit einem Klick weiter */
+add('dienste', '🧹', 'Dienste', 'Klasse', b => {
+  let D = store.get('dienste', { l: ['Tafeldienst', 'Ordnungsdienst', 'Austeiler', 'Fensterdienst'], o: 0 });
+  const save = () => store.set('dienste', D);
+  const draw = () => {
+    const K = klasse();
+    b.innerHTML = `${D.l.map((d, i) => `<div class="ds-r"><b>${esc(d)}</b><span>${K.length ? esc(K[(D.o + i) % K.length]) : '–'}</span></div>`).join('')}<div class="row"><button class="big nx">Weiterrücken ➜</button><button class="ad">+ Dienst</button><button class="rm">− Dienst</button></div><details><summary>Namen der Dienste</summary><textarea class="dn" rows="5" placeholder="Ein Dienst pro Zeile">${esc(D.l.join('\n'))}</textarea></details>`;
+    b.querySelector('.nx').onclick = () => { if (!K.length) { toast('Bitte zuerst die Klassenliste eintragen'); box.open = true; return } D.o = (D.o + D.l.length) % K.length; save(); draw() };
+    b.querySelector('.ad').onclick = () => { if (D.l.length < 10) { D.l.push('Dienst ' + (D.l.length + 1)); save(); draw() } };
+    b.querySelector('.rm').onclick = () => { if (D.l.length > 1) { D.l.pop(); save(); draw() } };
+    b.querySelector('.dn').oninput = e => { D.l = e.target.value.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 10); if (!D.l.length) D.l = ['Dienst']; save() };
+    b.querySelector('.dn').onchange = draw;
+    box = klasseBox(b);
+    box.querySelector('textarea').addEventListener('change', draw);
+  };
+  let box; draw();
+});
+
+/* Murmelglas: gemeinsames Klassenziel */
+add('murmeln', '🫙', 'Murmelglas', 'Klasse', b => {
+  let M = store.get('murmeln', { n: 0, g: 20 });
+  const COL = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6'];
+  b.innerHTML = `<div class="mg-wrap"><div class="mg-jar"></div><div><div class="mg-n"></div><div class="row c"><button class="m">−</button><button class="big p">+ Murmel</button></div><div class="row c"><span class="lab">Ziel</span><button class="gm">−</button><b class="gn" style="min-width:34px;text-align:center"></b><button class="gp">+</button></div><div class="row c"><button class="z">Leeren</button></div></div></div>`;
+  const jar = b.querySelector('.jar') || b.querySelector('.mg-jar'), nn = b.querySelector('.mg-n'), gn = b.querySelector('.gn');
+  const draw = (anim) => {
+    store.set('murmeln', M);
+    if (!anim) jar.innerHTML = Array.from({ length: M.n }, (_, i) => `<i style="background:${COL[i % 7]};animation:none"></i>`).join('');
+    nn.textContent = M.n + ' / ' + M.g; gn.textContent = M.g;
+  };
+  const add1 = () => { if (M.n >= M.g) { toast('🎉 Ziel schon erreicht!'); return } M.n++; const i = document.createElement('i'); i.style.background = COL[(M.n - 1) % 7]; jar.appendChild(i); draw(true); if (M.n === M.g) { toast('🎉 Das Glas ist voll – Ziel geschafft!', 5000); window.beep && window.beep() } };
+  b.querySelector('.p').onclick = add1;
+  b.querySelector('.m').onclick = () => { if (M.n > 0) { M.n--; draw() } };
+  b.querySelector('.gm').onclick = () => { M.g = Math.max(5, M.g - 5); M.n = Math.min(M.n, M.g); draw() };
+  b.querySelector('.gp').onclick = () => { M.g = Math.min(60, M.g + 5); draw() };
+  b.querySelector('.z').onclick = () => { M.n = 0; draw() };
+  draw();
+});
+
+/* Soundboard: Signaltöne, direkt erzeugt (keine Dateien) */
+const soundOn = () => store.get('ton', true);
+let actx = null;
+const audio = () => actx || (actx = new (window.AudioContext || window.webkitAudioContext)());
+const tone = (f, t0, dur, type = 'sine', vol = .3) => { const a = audio(), o = a.createOscillator(), g = a.createGain(); o.type = type; o.frequency.value = f; g.gain.setValueAtTime(0, a.currentTime + t0); g.gain.linearRampToValueAtTime(vol, a.currentTime + t0 + .01); g.gain.exponentialRampToValueAtTime(.0001, a.currentTime + t0 + dur); o.connect(g).connect(a.destination); o.start(a.currentTime + t0); o.stop(a.currentTime + t0 + dur + .05) };
+const noise = (t0, dur, vol, freq) => { const a = audio(), n = a.sampleRate * dur, buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; const s = a.createBufferSource(), g = a.createGain(), f = a.createBiquadFilter(); s.buffer = buf; f.type = 'bandpass'; f.frequency.value = freq; g.gain.setValueAtTime(vol, a.currentTime + t0); g.gain.exponentialRampToValueAtTime(.0001, a.currentTime + t0 + dur); s.connect(f).connect(g).connect(a.destination); s.start(a.currentTime + t0) };
+const SOUNDS = [
+  ['🔔', 'Glocke', () => { tone(880, 0, 2, 'sine', .3); tone(2430, 0, 1, 'sine', .1) }],
+  ['🥁', 'Gong', () => { tone(196, 0, 3.2, 'sine', .4); tone(392, 0, 2, 'sine', .15); tone(588, 0, 1.4, 'sine', .08) }],
+  ['✅', 'Richtig', () => { tone(660, 0, .25, 'triangle'); tone(880, .15, .45, 'triangle') }],
+  ['❌', 'Falsch', () => { tone(220, 0, .5, 'sawtooth', .18); tone(165, .2, .6, 'sawtooth', .18) }],
+  ['🥁', 'Trommelwirbel', () => { for (let i = 0; i < 24; i++) noise(i * .07, .09, .25 + i * .01, 220) }],
+  ['👏', 'Applaus', () => { for (let i = 0; i < 40; i++) noise(Math.random() * 2.2, .05 + Math.random() * .06, .22, 1800 + Math.random() * 2000) }],
+  ['🧹', 'Aufräumen', () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * .18, .35, 'triangle')) }],
+  ['🤫', 'Ruhe', () => { [784, 659, 523].forEach((f, i) => tone(f, i * .4, .8, 'sine', .25)) }],
+  ['⏰', 'Wecker', () => { for (let i = 0; i < 6; i++) tone(1400, i * .22, .12, 'square', .12) }]
+];
+add('soundboard', '🎵', 'Soundboard', 'Werkzeuge', b => {
+  b.innerHTML = `<div class="sb-g">${SOUNDS.map(([e, n], i) => `<button data-i="${i}"><span class="e">${e}</span>${n}</button>`).join('')}</div><div class="hint">Signaltöne für Aufräumen, Ruhe und Belohnung. „Ton aus“ stellst du im Menü unter Einstellungen.</div>`;
+  b.querySelectorAll('.sb-g button').forEach(x => x.onclick = () => { if (!soundOn()) { toast('Ton ist aus (Menü → Einstellungen)'); return } try { audio().resume(); SOUNDS[+x.dataset.i][2]() } catch (e) { toast('Ton konnte nicht abgespielt werden') } });
+}, 1);
+
+/* Zeichenfeld: kleine Zeichenfläche, frei verschiebbar */
+add('zeichenfeld', '✏️', 'Zeichenfeld', 'Werkzeuge', b => {
+  const COLS = ['#111111', '#ef4444', '#2563eb', '#16a34a'];
+  b.innerHTML = `<div class="zc2"><div class="row" style="margin:0 0 8px">${COLS.map((c, i) => `<button class="sw2 ${i ? '' : 'on'}" data-c="${c}" style="background:${c}" aria-label="Farbe"></button>`).join('')}<button class="er">Radierer</button><button class="cl">Leeren</button><button class="tb">Auf die Tafel</button></div><canvas width="520" height="340"></canvas></div>`;
+  const cv = b.querySelector('canvas'), c = cv.getContext('2d');
+  let col = COLS[0], er = false, last = null;
+  const pos = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height] };
+  cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); last = pos(e); c.fillStyle = er ? '#fff' : col; c.beginPath(); c.arc(last[0], last[1], er ? 14 : 2.5, 0, 7); c.fill() });
+  cv.addEventListener('pointermove', e => { if (!last) return; const p = pos(e); c.strokeStyle = er ? '#fff' : col; c.lineWidth = er ? 28 : 5; c.lineCap = c.lineJoin = 'round'; c.beginPath(); c.moveTo(last[0], last[1]); c.lineTo(p[0], p[1]); c.stroke(); last = p });
+  const end = () => last = null; cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+  b.querySelectorAll('.sw2').forEach(x => x.onclick = () => { col = x.dataset.c; er = false; b.querySelectorAll('.sw2').forEach(y => y.classList.toggle('on', y === x)); b.querySelector('.er').classList.remove('on') });
+  b.querySelector('.er').onclick = e => { er = !er; e.currentTarget.classList.toggle('on', er) };
+  b.querySelector('.cl').onclick = () => { c.clearRect(0, 0, cv.width, cv.height) };
+  b.querySelector('.tb').onclick = () => {
+    const src = cv.toDataURL('image/png'), im = new Image();
+    im.onload = () => { const id = uid(); S.images[id] = src; imgCache[id] = im; P().objs.push({ t: 'img', id, x: 300, y: 200, w: 520, h: 340 }); sel = P().objs.length - 1; tool = 'select'; snap(); toolsUI(); toast('Zeichnung liegt auf der Tafel') };
+    im.src = src;
+  };
+});
+
+/* Meine Inhalte: eigene Texte und Bilder, immer griffbereit (nur auf diesem Gerät gespeichert) */
+add('inhalte', '📦', 'Meine Inhalte', 'Werkzeuge', b => {
+  let C = store.get('inhalte', []);
+  const draw = () => {
+    b.innerHTML = `<div class="row" style="margin-top:0"><input class="tx" placeholder="Text, z. B. Hausaufgabe, Regel …" style="flex:1;min-width:230px"><button class="ta">+ Text</button><button class="ti">+ Bild</button></div><div class="mi-g">${C.length ? C.map((x, i) => `<div class="mi-c" data-i="${i}">${x.t === 'img' ? `<img src="${x.d}" alt="">` : esc(x.d)}<span class="dx" data-del="${i}" title="Entfernen">×</span></div>`).join('') : '<div class="hint" style="grid-column:1/-1;margin:0">Noch nichts gespeichert. Antippen legt den Inhalt auf die Tafel.</div>'}</div>`;
+    const tx = b.querySelector('.tx');
+    const addT = () => { const v = tx.value.trim(); if (!v) return; C.push({ t: 'txt', d: v }); store.set('inhalte', C); draw() };
+    b.querySelector('.ta').onclick = addT; tx.onkeydown = e => { if (e.key === 'Enter') addT() };
+    b.querySelector('.ti').onclick = () => {
+      const f = document.createElement('input'); f.type = 'file'; f.accept = 'image/*';
+      f.onchange = () => { const file = f.files[0]; if (!file) return; const fr = new FileReader(); fr.onload = () => { const im = new Image(); im.onload = () => { const s = Math.min(1, 900 / Math.max(im.width, im.height)), cv = document.createElement('canvas'); cv.width = Math.round(im.width * s); cv.height = Math.round(im.height * s); cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height); C.push({ t: 'img', d: cv.toDataURL('image/jpeg', .85) }); store.set('inhalte', C); draw() }; im.src = fr.result }; fr.readAsDataURL(file) };
+      f.click();
+    };
+    b.querySelectorAll('.mi-c').forEach(el => el.onclick = e => {
+      const del = e.target.closest('[data-del]'); if (del) { C.splice(+del.dataset.del, 1); store.set('inhalte', C); draw(); return }
+      const x = C[+el.dataset.i]; if (!x) return;
+      if (x.t === 'img') {
+        const im = new Image(); im.onload = () => { const id = uid(), w = Math.min(640, im.width), hh = w * im.height / im.width; S.images[id] = x.d; imgCache[id] = im; P().objs.push({ t: 'img', id, x: 260, y: 170, w, h: hh }); sel = P().objs.length - 1; tool = 'select'; snap(); toolsUI() }; im.src = x.d;
+      } else { wrapText(x.d, 34).forEach((l, i) => P().objs.push(TX(260, 170 + i * 80, l, 64))); snap(); toast('Text liegt auf der Tafel') }
+    });
+  };
+  draw();
+});
+}
+
 /* ---------- Menü in der Leiste ---------- */
 /* Reiter (Gruppen) mit Farbe und Symbol; Zuordnung und Symbol jedes Widgets */
 const GRP = [
@@ -946,13 +1131,14 @@ const GRP = [
   ['vorlagen', 'Vorlagen', 'layout', '#8b5cf6']
 ];
 const META = {
+  phase: ['klasse', 'presentation'], dienste: ['klasse', 'userCheck'], murmeln: ['klasse', 'jar'], soundboard: ['hilfsmittel', 'music'], zeichenfeld: ['hilfsmittel', 'pencil'], inhalte: ['hilfsmittel', 'box'],
   stunde: ['klasse', 'calendar'], symbole: ['klasse', 'images'], ampel: ['klasse', 'traffic'], punkte: ['klasse', 'trophy'], abstimmung: ['klasse', 'chart'], geburtstag: ['klasse', 'cake'],
   zufall: ['zufall', 'target'], gruppen: ['zufall', 'users'], wuerfel: ['zufall', 'dice'],
   zeitscheibe: ['zeit', 'hourglass'], stoppuhr: ['zeit', 'timer'], countdown: ['zeit', 'flag'], stundenplan: ['zeit', 'table'], uhr: ['zeit', 'clock'],
   zahlen: ['mathe', 'dots'], rechner: ['mathe', 'calc'],
   anlaut: ['deutsch', 'abc'],
   laerm: ['hilfsmittel', 'volume'], qr: ['hilfsmittel', 'qr'], kamera: ['hilfsmittel', 'camera'], einbetten: ['hilfsmittel', 'globe'], links: ['hilfsmittel', 'link'], sticker: ['hilfsmittel', 'star'],
-  vorlagen: ['vorlagen', 'layout'], seitenvorlagen: ['vorlagen', 'bookmark'], gehirnpause: ['vorlagen', 'pulse'], hilfe: ['vorlagen', 'help']
+  vorlagen: ['vorlagen', 'layout'], seitenvorlagen: ['vorlagen', 'bookmark'], gehirnpause: ['vorlagen', 'pulse'], hilfe: ['vorlagen', 'help'], gespeichert: ['klasse', 'folder']
 };
 WG.forEach(d => { const m = META[d.id]; if (m) { d.group = m[0]; d.icon = m[1] } else { d.group = d.group === 'Zeit' ? 'zeit' : 'hilfsmittel'; d.icon = 'layout' } });
 // Linien-Symbole (24×24, Strichstärke 2) – einheitlicher Stil
@@ -986,7 +1172,8 @@ Object.assign(WICONS, {
   bookmark: '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>',
   pulse: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>',
   help: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
-  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'
+  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  folder: '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>'
 });
 
 ICONS.widgets = '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><path d="M17.5 14v7"/><path d="M14 17.5h7"/>';
@@ -1067,6 +1254,88 @@ pop.addEventListener('click', e => {
 });
 btn.addEventListener('click', () => { pop.querySelector('.ws').value = ''; renderMenu() });
 renderMenu();
+
+/* Einstellungen im Widget-Menü: Leiste ausblenden, weniger Bewegung, Ton, Raster */
+{
+  const set = h(`<details class="wlay wset"><summary>Einstellungen</summary>
+<label><input type="checkbox" data-s="autohide"> Leisten automatisch ausblenden</label><small>Nach 4 Sekunden ohne Bewegung. Bewegen oder Tippen holt sie zurück.</small>
+<label><input type="checkbox" data-s="calm"> Weniger Bewegung</label><small>Ohne Animationen – für stille Phasen.</small>
+<label><input type="checkbox" data-s="ton" checked> Ton an</label>
+<label><input type="checkbox" data-s="raster"> Widgets am Raster ausrichten</label></details>`);
+  pop.appendChild(set);
+  const bar = $('#bar'); let idleT = 0;
+  const wake = () => { bar.classList.remove('idle'); clearTimeout(idleT); if (document.documentElement.classList.contains('autohide')) idleT = setTimeout(() => { if (!document.querySelector('.pop.show')) bar.classList.add('idle') }, 4000) };
+  const apply = () => {
+    const R = document.documentElement.classList;
+    R.toggle('autohide', !!store.get('autohide', false)); R.toggle('calm', !!store.get('calm', false));
+    wake();
+  };
+  set.querySelectorAll('[data-s]').forEach(x => {
+    const k = x.dataset.s; x.checked = store.get(k, k === 'ton');
+    x.onchange = () => { store.set(k, x.checked); apply() };
+  });
+  ['pointermove', 'pointerdown', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, wake, { passive: true, capture: true }));
+  apply();
+}
+
+/* Zoom auf der Tafel, Verschieben mit der Hand, Leiste ein-/ausblenden (kleine Schwebeleiste unten rechts) */
+{
+  const z2 = document.createElement('style');
+  z2.textContent = `
+#zoomfab{position:fixed;right:14px;bottom:14px;z-index:70;display:flex;gap:4px;align-items:center;padding:5px;border-radius:999px;background:var(--bar);color:var(--ink);box-shadow:0 10px 30px rgba(30,40,80,.22),0 1px 3px rgba(30,40,80,.1);border:1px solid color-mix(in srgb,var(--ink) 8%,transparent);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);transition:opacity .3s}
+body.right #zoomfab{right:auto;left:14px}
+#zoomfab button{min-width:44px;min-height:44px;width:auto;padding:0 10px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-direction:row;background:transparent}
+#zoomfab button.on{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+#zoomfab .zv{min-width:58px}
+#zoomfab .zs{width:1px;height:26px;background:color-mix(in srgb,var(--ink) 14%,transparent);margin:0 2px}
+html.barhid #bar{opacity:0;pointer-events:none;transform:translateX(-120%)}
+html.barhid body.right #bar{transform:translateX(120%)}
+#wrap.zoomed{transition:transform .12s}
+#wrap.hand,#wrap.hand canvas{cursor:grab!important}
+`;
+  document.head.appendChild(z2);
+  const fab = h(`<div id="zoomfab"><button class="zo" title="Verkleinern" aria-label="Verkleinern">${ic('minus', 20)}</button><button class="zv" title="Zoom zurücksetzen">100 %</button><button class="zi" title="Vergrößern" aria-label="Vergrößern">${ic('plus', 20)}</button><button class="zh" title="Tafel mit der Hand verschieben" aria-label="Verschieben">✋</button><span class="zs"></span><button class="bh" title="Leiste ausblenden" aria-label="Leiste ausblenden">⮟</button></div>`);
+  document.body.appendChild(fab);
+  const wr = $('#wrap'); let zz = 1, px = 0, py = 0, handOn = false;
+  const lim = () => { const r = wr.offsetWidth * (zz - 1) / 2 + 80, q = wr.offsetHeight * (zz - 1) / 2 + 80; px = clamp(px, -r, r); py = clamp(py, -q, q) };
+  const applyZ = () => {
+    if (zz <= 1.001) { zz = 1; px = py = 0 } else lim();
+    wr.style.transform = zz === 1 ? '' : `translate(${px}px,${py}px) scale(${zz})`;
+    wr.classList.toggle('zoomed', zz !== 1);
+    fab.querySelector('.zv').textContent = Math.round(zz * 100) + ' %';
+    if (zz === 1 && handOn) { handOn = false; wr.classList.remove('hand'); fab.querySelector('.zh').classList.remove('on') }
+  };
+  const setZ = v => { zz = clamp(Math.round(v * 100) / 100, 1, 3); applyZ() };
+  fab.querySelector('.zi').onclick = () => setZ(zz + .25);
+  fab.querySelector('.zo').onclick = () => setZ(zz - .25);
+  fab.querySelector('.zv').onclick = () => setZ(1);
+  fab.querySelector('.zh').onclick = () => { if (zz === 1) { setZ(1.5) } handOn = !handOn; wr.classList.toggle('hand', handOn); fab.querySelector('.zh').classList.toggle('on', handOn) };
+  fab.querySelector('.bh').onclick = () => { const R = document.documentElement.classList, on = R.toggle('barhid'); const b = fab.querySelector('.bh'); b.textContent = on ? '⮝' : '⮟'; b.title = b.ariaLabel = on ? 'Leiste einblenden' : 'Leiste ausblenden'; if (on) document.querySelectorAll('.pop').forEach(p => p.classList.remove('show')) };
+  // Verschieben: im Hand-Modus ziehen (fängt die Eingabe vor dem Zeichnen ab)
+  wr.addEventListener('pointerdown', e => {
+    if (!handOn) return;
+    e.stopPropagation(); e.preventDefault();
+    const sx = e.clientX - px, sy = e.clientY - py;
+    wr.setPointerCapture(e.pointerId);
+    const mv = ev => { px = ev.clientX - sx; py = ev.clientY - sy; applyZ() };
+    const up = () => { wr.removeEventListener('pointermove', mv); wr.removeEventListener('pointerup', up); wr.removeEventListener('pointercancel', up) };
+    wr.addEventListener('pointermove', mv); wr.addEventListener('pointerup', up); wr.addEventListener('pointercancel', up);
+  }, true);
+  // Strg + Mausrad zoomt
+  wr.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); setZ(zz + (e.deltaY < 0 ? .25 : -.25)) }, { passive: false });
+  window.__zoom = { set: setZ, get: () => zz };
+}
+
+/* Schnellzugriff: bis zu 7 Favoriten direkt in der Leiste („Leiste anpassen“ = im Menü den Stern setzen) */
+const favgrp = h('<div class="grp" id="favgrp"></div>');
+btn.parentNode.parentNode.insertBefore(favgrp, btn.parentNode.nextSibling);
+function renderFav() {
+  const f = store.get('favs', []).slice(0, 7).map(id => WG.find(d => d.id === id)).filter(Boolean);
+  favgrp.innerHTML = f.map(d => `<button data-fq="${d.id}" title="${esc(d.title)}" aria-label="${esc(d.title)}">${wic(d.icon, 22)}<small>${esc(d.title.split(' ')[0])}</small></button>`).join('');
+}
+favgrp.addEventListener('click', e => { const b = e.target.closest('[data-fq]'); if (!b) return; const d = WG.find(x => x.id === b.dataset.fq); if (d) { document.querySelectorAll('.pop').forEach(p => p.classList.remove('show')); openWidget(d) } });
+pop.addEventListener('click', e => { if (e.target.closest('[data-fav]')) setTimeout(renderFav, 0) }, true);
+renderFav();
 window.__widgets = { openWidget, W: WG, closeW };
 // Die schmale Leiste zeigt nur Symbole: Beschriftung als Tooltip und für Screenreader
 document.querySelectorAll('#bar .grp>button').forEach(b => {
@@ -1238,14 +1507,30 @@ window.__planer = {
     await loadLesson(l, auto);
   }
 };
+/* Tafel speichern: Dateiname Datum_Stunde_Fach_Thema, je Seite mit Inhalt ein Bild; der LehrerPlaner ordnet die Bilder der Stunde zu */
+function boardPayload() {
+  const L = PL.lesson;
+  const dateiname = L ? [L.datum, L.stunde, L.fach, L.thema || 'Tafel'].filter(x => x !== '' && x != null).join('_') : 'Tafel_' + isoToday();
+  const pages = S.pages.filter(p => p.objs.length || p.bgImg).slice(0, 20);
+  const pngs = pages.map(p => { const c = document.createElement('canvas'); c.width = W; c.height = H; render(c.getContext('2d'), p, false); return c.toDataURL('image/png') });
+  return { klasse: ctx.klasse, dateiname, eindeutig: !L, json: serialize(), pngs, stunde: L ? { id: L.id, datum: L.datum, stunde: L.stunde, klasse: L.klasse, fach: L.fach } : null };
+}
+window.__planer.beimBeenden = () => {   // wird von der App beim Schließen aufgerufen
+  if (!S.pages.some(p => p.objs.length || p.bgImg)) return null;
+  sendRueck(true);
+  return boardPayload();
+};
+window.__planer.nachSpeichern = async () => {   // nach dem automatischen Speichern beim Beenden: leere Tafel für den nächsten Start
+  clearTimeout(st);
+  S.pages = [mkPage('plain')]; S.cur = 0; S.images = {}; sel = null; draft = null;
+  store.set('lastLesson', '');
+  await kvSet('state', serialize());
+};
 if (window.planer && window.planer.speichern) {
-  // In der Windows-App speichert „Speichern“ direkt im Tafel-Ordner (Dokumente\MeineTafel\Tafelbilder\<Klasse>), wo der LehrerPlaner es der Stunde zuordnet
   $('#fsave').onclick = async () => {
     $('#filepop').classList.remove('show');
-    const c = document.createElement('canvas'); c.width = W; c.height = H; render(c.getContext('2d'), P(), false);
-    const name = ctx.thema || 'Tafel', L = PL.lesson;
-    const r = await window.planer.speichern({ klasse: ctx.klasse, name, json: serialize(), png: c.toDataURL('image/png'), stunde: L ? { id: L.id, datum: L.datum, stunde: L.stunde, klasse: L.klasse, fach: L.fach } : null });
-    toast(r.ok ? 'Gespeichert: Dokumente\\MeineTafel\\Tafelbilder\\' + (ctx.klasse || 'Allgemein') + (L ? ' – wird im Planer der Stunde zugeordnet' : '') : 'Speichern nicht möglich: ' + r.fehler, 4500);
+    const L = PL.lesson, r = await window.planer.speichern(boardPayload());
+    toast(r.ok ? 'Gespeichert: ' + String(r.datei).split('\\').slice(-2).join('\\') + (L ? ' – wird im Planer der Stunde zugeordnet' : '') : 'Speichern nicht möglich: ' + r.fehler, 5000);
     sendRueck(true);
   };
 }

@@ -6,5 +6,8 @@ contextBridge.exposeInMainWorld('planer', {
   karte: f => ipcRenderer.invoke('karte:lesen', f),
   datei: f => ipcRenderer.invoke('planer:datei', f),
   paketLesen: () => ipcRenderer.invoke('paket:lesen'),
-  rueck: d => ipcRenderer.send('rueck:schreiben', d)
+  rueck: d => ipcRenderer.send('rueck:schreiben', d),
+  tafelnListe: () => ipcRenderer.invoke('tafeln:liste'),
+  tafelnOeffnen: f => ipcRenderer.invoke('tafeln:oeffnen', f),
+  tafelnOrdner: f => ipcRenderer.invoke('tafeln:ordner', f)
 });

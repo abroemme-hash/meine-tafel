@@ -82,6 +82,21 @@ function create() {
     webPreferences: { contextIsolation: true, sandbox: true, spellcheck: false, preload: path.join(__dirname, 'preload.js') }
   });
   win.maximize();
+  // Beim Beenden die Tafel automatisch speichern (Datum_Stunde_Fach_Thema), höchstens 5 Sekunden warten
+  let beendet = false;
+  win.on('close', async e => {
+    if (beendet) return;
+    e.preventDefault(); beendet = true;
+    try {
+      const d = await Promise.race([win.webContents.executeJavaScript('window.__planer&&window.__planer.beimBeenden?window.__planer.beimBeenden():null'), new Promise(r => setTimeout(() => r(null), 5000))]);
+      if (d && typeof d.json === 'string') {
+        speichere(d);   // wirft bei einem Fehler: dann bleibt die Tafel unverändert erhalten
+        // erst nach erfolgreichem Speichern: neue, leere Tafel für den nächsten Start
+        await Promise.race([win.webContents.executeJavaScript('window.__planer&&window.__planer.nachSpeichern?window.__planer.nachSpeichern():null'), new Promise(r => setTimeout(r, 3000))]);
+      }
+    } catch (err) {}
+    win.destroy();
+  });
   win.loadFile(path.join(__dirname, 'www', 'index.html'));
   win.webContents.on('did-finish-load', () => { ready = true; const p = pending; pending = null; if (p) apply(p); setTimeout(() => sendPaket(p && p.stunde), 700); });
 
@@ -96,23 +111,44 @@ function create() {
   });
 }
 
-// Tafel im Planer-Ordner ablegen: Dokumente\MeineTafel\Tafelbilder\<Klasse>\<Datum>-<Thema>.tafel.json (+ .png)
+// Gespeicherte Tafeln: Dokumente\MeineTafel\Tafelbilder\<Klasse>\<Datum_Stunde_Fach_Thema>.tafel.json (+ je Seite ein .png, + .meta.json für den Planer)
+const TAFELN = () => path.join(app.getPath('documents'), 'MeineTafel', 'Tafelbilder');
+function speichere(d) {
+  const dir = path.join(TAFELN(), safe(d.klasse) || 'Allgemein');
+  fs.mkdirSync(dir, { recursive: true });
+  let base = safe(d.dateiname) || ('Tafel_' + new Date().toISOString().slice(0, 10));
+  if (d.eindeutig) base += '_' + new Date().toTimeString().slice(0, 5).replace(':', '-');   // ohne Stunde: Uhrzeit anhängen, damit nichts überschrieben wird
+  const stem = path.join(dir, base);
+  fs.writeFileSync(stem + '.tafel.json', d.json, 'utf8');
+  const bilder = [], pngs = Array.isArray(d.pngs) ? d.pngs : (d.png ? [d.png] : []);
+  pngs.forEach((p, i) => {
+    const mm = /^data:image\/png;base64,(.+)$/.exec(p || '');
+    if (mm) { const nm = base + (pngs.length > 1 ? '_S' + (i + 1) : '') + '.png'; fs.writeFileSync(path.join(dir, nm), Buffer.from(mm[1], 'base64')); bilder.push(nm); }
+  });
+  // übrig gebliebene Bilder früherer Speicherungen derselben Tafel entfernen (z. B. weniger Seiten als vorher)
+  try { for (const f of fs.readdirSync(dir)) if (f.startsWith(base + '_S') && /_S\d+\.png$/.test(f) && !bilder.includes(f)) fs.unlinkSync(path.join(dir, f)); } catch (e) {}
+  if (d.stunde && typeof d.stunde === 'object') fs.writeFileSync(stem + '.meta.json', JSON.stringify({ stunde: d.stunde, datei: base, bilder }), 'utf8');
+  return stem + '.tafel.json';
+}
 ipcMain.handle('planer:speichern', (e, d) => {
   if (!win || e.sender !== win.webContents || !d || typeof d.json !== 'string') return { ok: false, fehler: 'Ungültige Anfrage' };
-  try {
-    const dir = path.join(app.getPath('documents'), 'MeineTafel', 'Tafelbilder', safe(d.klasse) || 'Allgemein');
-    fs.mkdirSync(dir, { recursive: true });
-    const day = new Date().toISOString().slice(0, 10);
-    const base = day + '-' + (safe(d.name) || 'Tafel');
-    let stem = path.join(dir, base), n = 1;
-    while (fs.existsSync(stem + '.tafel.json')) stem = path.join(dir, base + '-' + (++n));
-    fs.writeFileSync(stem + '.tafel.json', d.json, 'utf8');
-    const m = /^data:image\/png;base64,(.+)$/.exec(d.png || '');
-    if (m) fs.writeFileSync(stem + '.png', Buffer.from(m[1], 'base64'));
-    if (d.stunde && typeof d.stunde === 'object') fs.writeFileSync(stem + '.meta.json', JSON.stringify({ stunde: d.stunde, datei: path.basename(stem) }), 'utf8');
-    return { ok: true, datei: stem + '.tafel.json' };
-  } catch (err) { return { ok: false, fehler: String(err.message || err) }; }
+  try { return { ok: true, datei: speichere(d) }; } catch (err) { return { ok: false, fehler: String(err.message || err) }; }
 });
+ipcMain.handle('tafeln:liste', e => {
+  if (!win || e.sender !== win.webContents) return [];
+  const out = [], root = TAFELN();
+  try {
+    for (const k of fs.readdirSync(root, { withFileTypes: true })) {
+      if (!k.isDirectory()) continue;
+      const dir = path.join(root, k.name);
+      for (const f of fs.readdirSync(dir)) if (f.endsWith('.tafel.json')) { const p = path.join(dir, f); out.push({ klasse: k.name, name: f.slice(0, -11), datei: p, zeit: fs.statSync(p).mtimeMs }); }
+    }
+  } catch (err) {}
+  return out.sort((a, b) => b.zeit - a.zeit).slice(0, 300);
+});
+const imTafelnOrdner = f => { const r = path.resolve(String(f)), root = path.resolve(TAFELN()); return r.toLowerCase().startsWith(root.toLowerCase() + path.sep) && r.endsWith('.tafel.json') ? r : null; };
+ipcMain.handle('tafeln:oeffnen', (e, f) => { if (!win || e.sender !== win.webContents) return null; const r = imTafelnOrdner(f); try { return r ? fs.readFileSync(r, 'utf8') : null; } catch (err) { return null; } });
+ipcMain.handle('tafeln:ordner', (e, f) => { if (!win || e.sender !== win.webContents) return false; const r = imTafelnOrdner(f); if (r) shell.showItemInFolder(r); return !!r; });
 
 // Bildkarten (Ordner www/karten) als Data-URL liefern, damit sie ohne „tainted canvas“ auf die Tafel gelegt werden können
 ipcMain.handle('karte:lesen', (e, f) => {

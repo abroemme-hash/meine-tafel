@@ -1,0 +1,107 @@
+/* Design 2.0 – weiche Kapseln, Glas, Farbe je Widget-Gruppe, kleine Animationen.
+   Wird nach den Grundstilen geladen; „html“ vor den Selektoren erhöht die Spezifität, damit diese Regeln gewinnen. */
+
+/* ---------- Grundlage ---------- */
+html{--ease:cubic-bezier(.2,.8,.2,1)}
+html button{transition:transform .14s var(--ease),background .18s,color .18s,box-shadow .2s,filter .2s}
+
+/* ---------- Werkzeugleiste ---------- */
+html #bar{border-radius:30px;padding:8px;border:1px solid color-mix(in srgb,var(--ink) 6%,transparent);box-shadow:0 18px 48px rgba(30,40,80,.16),0 1px 3px rgba(30,40,80,.08);-webkit-backdrop-filter:blur(26px) saturate(1.7);backdrop-filter:blur(26px) saturate(1.7)}
+html #bar .grp+.grp{border-top-color:color-mix(in srgb,var(--ink) 8%,transparent)}
+html #bar .grp>button{position:relative;border-radius:16px}
+@media(hover:hover){html #bar .grp>button:hover:not(:disabled):not(.on){background:color-mix(in srgb,var(--accent) 10%,transparent);transform:translateY(-1px)}}
+html #bar .grp>button:active:not(:disabled){transform:scale(.92)}
+html #bar .grp>button.on{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--accent) 38%,transparent),0 6px 16px color-mix(in srgb,var(--accent) 22%,transparent)}
+html #bar .grp>button.on:not(.sw):not(.sz)::after{content:"";position:absolute;right:6px;top:6px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+html #bar .grp>button.sw{border-radius:50%;transition:transform .16s var(--ease),box-shadow .2s}
+@media(hover:hover){html #bar .grp>button.sw:hover{transform:scale(1.18);background:inherit}}
+html #bar .grp>#undo,html #bar .grp>#redo{border-radius:50%}
+
+/* ---------- Menüs der Leiste ---------- */
+html .pop{border-radius:26px;padding:14px;border:1px solid color-mix(in srgb,var(--ink) 6%,transparent);box-shadow:0 22px 60px rgba(30,40,80,.2),0 2px 8px rgba(30,40,80,.08);-webkit-backdrop-filter:blur(26px) saturate(1.6);backdrop-filter:blur(26px) saturate(1.6);gap:8px}
+html .pop.show{animation:popin .2s var(--ease)}
+@keyframes popin{from{opacity:0;transform:translateX(-8px) scale(.98)}}
+html .pop>button{border-radius:18px;min-width:84px;min-height:72px;background:color-mix(in srgb,var(--ink) 5%,transparent);gap:6px}
+@media(hover:hover){html .pop>button:hover:not(:disabled):not(.on){background:color-mix(in srgb,var(--accent) 11%,transparent);transform:translateY(-2px);box-shadow:0 8px 18px rgba(30,40,80,.1)}}
+html .pop>button .ic{width:24px;height:24px}
+html .pop>button.on{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+html .pop h4{font-size:11px;letter-spacing:.12em;color:var(--mute);margin:8px 6px 0}
+html .chip{border-radius:999px;min-height:42px;padding:0 18px}
+html .pop .sw.big{border-radius:50%;transition:transform .16s var(--ease)}
+@media(hover:hover){html .pop .sw.big:hover{transform:scale(1.15)}}
+
+/* ---------- Widget-Menü ---------- */
+html #widpop{border-radius:30px;padding:16px;gap:12px}
+html #widpop .ws{border-radius:999px;padding:12px 18px 12px 44px;background:color-mix(in srgb,var(--ink) 5%,transparent);border-color:transparent}
+html #widpop .ws:focus{background:var(--bar);border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 16%,transparent)}
+html #widpop .wsearch svg{left:16px}
+html #widpop .wtab{border-radius:999px;min-height:42px;background:color-mix(in srgb,var(--ink) 5%,transparent);transition:transform .14s var(--ease),background .18s,box-shadow .2s}
+@media(hover:hover){html #widpop .wtab:hover:not(.on){background:color-mix(in srgb,var(--g) 14%,transparent);transform:translateY(-1px)}}
+html #widpop .wtab.on{background:linear-gradient(135deg,var(--g),color-mix(in srgb,var(--g) 74%,#000));box-shadow:0 8px 20px color-mix(in srgb,var(--g) 40%,transparent)}
+html #widpop .wgrid{gap:10px}
+html #widpop .wi{border-radius:22px;min-height:112px;background:color-mix(in srgb,var(--ink) 4.5%,transparent);animation:tilein .28s var(--ease) both;transition:transform .18s var(--ease),box-shadow .22s,background .2s}
+@keyframes tilein{from{opacity:0;transform:translateY(10px) scale(.95)}}
+html #widpop .wi:nth-child(2){animation-delay:.025s}html #widpop .wi:nth-child(3){animation-delay:.05s}html #widpop .wi:nth-child(4){animation-delay:.075s}
+html #widpop .wi:nth-child(5){animation-delay:.1s}html #widpop .wi:nth-child(6){animation-delay:.125s}html #widpop .wi:nth-child(n+7){animation-delay:.15s}
+@media(hover:hover){html #widpop .wi:hover{transform:translateY(-3px);background:color-mix(in srgb,var(--ink) 7%,transparent);box-shadow:0 14px 28px rgba(30,40,80,.14)}}
+html #widpop .wi:active{transform:scale(.96)}
+html #widpop .wi .wt{border-radius:16px;box-shadow:0 8px 18px color-mix(in srgb,var(--g) 38%,transparent);transition:transform .2s var(--ease)}
+@media(hover:hover){html #widpop .wi:hover .wt{transform:scale(1.08) rotate(-3deg)}}
+html #widpop .wi.on{outline:none;background:color-mix(in srgb,var(--accent) 12%,transparent);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--accent) 45%,transparent)}
+html #widpop .wlrow button{border-radius:999px}
+
+/* ---------- Widget-Fenster ---------- */
+html .wg{border-radius:28px;border:1px solid color-mix(in srgb,var(--w-fg) 8%,transparent);box-shadow:0 24px 64px rgba(20,28,60,.22),0 2px 10px rgba(20,28,60,.1)}
+html .wg::before{height:4px;background:linear-gradient(90deg,var(--wa),color-mix(in srgb,var(--wa) 55%,#fff))}
+html .wg .wh{padding:14px 8px 6px 16px}
+html .wg .wh .wm,html .wg .wh .wx{width:34px;height:34px;min-width:34px;min-height:34px;padding:0;border-radius:50%;background:transparent;border:0;color:var(--w-mute);box-shadow:none}
+@media(hover:hover){html .wg .wh .wm:hover:not(:disabled){background:var(--w-soft2);color:var(--w-fg);transform:none}html .wg .wh .wx:hover:not(:disabled){background:rgba(239,68,68,.16);color:#ef4444;transform:none}}
+html .wg .wh .ei{border-radius:11px;box-shadow:0 6px 14px color-mix(in srgb,var(--wa) 38%,transparent)}
+html .wg .wz{opacity:.7}
+
+/* Knöpfe in Widgets: Kapseln; Hauptknopf mit Farbverlauf in der Gruppenfarbe */
+html .wg button{min-height:46px;min-width:46px;padding:0 18px;border-radius:999px;font-size:15px;font-weight:600;letter-spacing:.005em;background:var(--w-soft);border:1px solid color-mix(in srgb,var(--w-fg) 7%,transparent);color:var(--w-fg)}
+@media(hover:hover){html .wg button:hover:not(:disabled):not(.on):not(.big){background:var(--w-soft2);transform:translateY(-1px)}}
+html .wg button:active:not(:disabled){transform:scale(.96)}
+html .wg button.big{min-height:52px;padding:0 26px;font-size:16px;border:0;color:#fff;background:linear-gradient(135deg,var(--wa),color-mix(in srgb,var(--wa) 70%,#000));box-shadow:0 10px 24px color-mix(in srgb,var(--wa) 42%,transparent)}
+@media(hover:hover){html .wg button.big:hover:not(:disabled){filter:brightness(1.07);transform:translateY(-2px);box-shadow:0 16px 32px color-mix(in srgb,var(--wa) 46%,transparent)}}
+html .wg button.on{background:color-mix(in srgb,var(--wa) 18%,transparent);color:var(--wa);border-color:color-mix(in srgb,var(--wa) 42%,transparent);box-shadow:none}
+html .wg button.big.on{background:linear-gradient(135deg,var(--wa),color-mix(in srgb,var(--wa) 70%,#000));color:#fff}
+html .wg input,html .wg select,html .wg textarea{border-radius:16px;border:1px solid var(--w-line);background:var(--w-soft);padding:10px 14px;transition:border-color .18s,box-shadow .18s,background .18s}
+html .wg input:focus,html .wg select:focus,html .wg textarea:focus{border-color:var(--wa);box-shadow:0 0 0 4px color-mix(in srgb,var(--wa) 18%,transparent);background:transparent}
+html .wg input[type=range]{padding:0;accent-color:var(--wa)}
+html .wg input[type=checkbox]{accent-color:var(--wa);width:18px;height:18px}
+html .wg details summary{font-weight:600}
+
+/* besondere Knöpfe: Kacheln statt Kapseln */
+html .wg .kc,html .wg .sl,html .wg .sy-grid button,html .wg .st-g button,html .wg .al-g button,html .wg .gr button.big{border-radius:20px}
+html .wg .sl{padding:10px 16px}
+html .wg .rc-g button{border-radius:20px;font-size:24px;min-height:60px}
+html .wg .rc-g button.op{background:color-mix(in srgb,var(--wa) 18%,transparent);color:var(--wa);border-color:transparent}
+html .wg .rc-g button.big{border-radius:20px}
+html .wg .am-box button{border-radius:50%;min-height:78px;padding:0;border-width:0}
+html .wg .am-box{border-radius:30px}
+html .wg .pt-t,html .wg .gr-g,html .wg .gr,html .wg .zf-name,html .wg .rc-d,html .wg .ab-b{border-radius:20px}
+html .wg .zf-name{background:color-mix(in srgb,var(--wa) 10%,transparent)}
+html .wg .die{border-radius:22px}
+html .wg .zc{border-radius:12px;transition:transform .14s var(--ease),background .18s}
+@media(hover:hover){html .wg .zc:hover{transform:scale(1.06)}}
+
+/* Menü-Schalter am Rand der Leiste (Links) */
+html #linksgrp button img{border-radius:12px}
+
+/* ---------- Einführung ---------- */
+html #intro .ic-card{border-radius:32px}
+html #intro .ic-s{border-radius:22px}
+html #intro .ic-s .t{border-radius:14px;background:linear-gradient(135deg,#5b5bd6,#8b7cf0);box-shadow:0 8px 18px rgba(91,91,214,.35)}
+html #intro .ic-go{border-radius:999px;background:linear-gradient(135deg,#5b5bd6,#7c6ae6);box-shadow:0 12px 26px rgba(91,91,214,.4)}
+
+/* ---------- Hinweise (Toast) ---------- */
+html #toast{border-radius:999px;padding:12px 24px;box-shadow:0 14px 36px rgba(20,28,60,.3);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+
+/* ---------- Weniger Bewegung, wenn gewünscht ---------- */
+@media(prefers-reduced-motion:reduce){html *{animation:none!important;transition:none!important}}
+
+/* „Alles wegradieren“ unter dem Radierer: dezent rot, damit klar ist, dass es löscht */
+html #bar #erasegrp>button{background:rgba(239,68,68,.1);color:#d64545;box-shadow:inset 0 0 0 1px rgba(239,68,68,.22)}
+@media(hover:hover){html #bar #erasegrp>button:hover:not(:disabled){background:rgba(239,68,68,.18);transform:translateY(-1px)}}
