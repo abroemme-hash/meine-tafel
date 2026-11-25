@@ -1235,10 +1235,12 @@ lgrp.addEventListener('click', e => { const b = e.target.closest('[data-link]');
 lgrp.addEventListener('contextmenu', e => {   // Adresse ändern (nur auf diesem Gerät gespeichert, z. B. eigenes TaskCards-Board)
   const b = e.target.closest('[data-link]'); if (!b) return; e.preventDefault();
   const k = b.dataset.link, q = QL.find(x => x[0] === k), cur = qlUrl(k);
-  const v = prompt(`Adresse für „${q[2]}“ (leer lassen = Standard):`, cur); if (v == null) return;
-  const all = store.get('quicklinks', {}), t = v.trim();
-  if (!t) delete all[k]; else if (/^https?:\/\//i.test(t)) all[k] = t; else { toast('Bitte eine Adresse mit https:// eingeben', 3500); return }
-  store.set('quicklinks', all); toast('Adresse gespeichert');
+  window.__ask({ titel: `Adresse für „${q[2]}“`, felder: [{ label: 'Leer lassen = Standard', wert: cur }], ok: 'Speichern' }).then(r => {   // prompt() gibt es in der Windows-App nicht
+    if (!r) return;
+    const all = store.get('quicklinks', {}), t = r[0].trim();
+    if (!t) delete all[k]; else if (/^https?:\/\//i.test(t)) all[k] = t; else { toast('Bitte eine Adresse mit https:// eingeben', 3500); return }
+    store.set('quicklinks', all); toast('Adresse gespeichert');
+  });
 });
 $('#bar').appendChild(pop);
 const menuState = () => pop.querySelectorAll('[data-w]').forEach(x => x.classList.toggle('on', !!openW[x.dataset.w]));

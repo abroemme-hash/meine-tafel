@@ -564,9 +564,9 @@ function fileToDataURL(f){return new Promise((res,rej)=>{const r=new FileReader(
 async function shrink(f){const src=await fileToDataURL(f);if(f.size<600000)return src;
   return new Promise(res=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1600/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement('canvas');c.width=im.naturalWidth*k;c.height=im.naturalHeight*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL(f.type==='image/png'?'image/png':'image/jpeg',.88))};im.onerror=()=>res(src);im.src=src})}
 $('#fileImg').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(f)addImage(await shrink(f))};
-addEventListener('paste',async e=>{if(e.target===txt)return;for(const it of e.clipboardData.items){if(it.type.startsWith('image/')){addImage(await shrink(it.getAsFile()));e.preventDefault();return}}});
+addEventListener('paste',async e=>{if(e.target===txt)return;for(const it of e.clipboardData.items){if(it.type.startsWith('image/')){e.preventDefault();const src=await shrink(it.getAsFile());addImage(src);window.__bilder&&window.__bilder.auto(src,'Eingefügt '+new Date().toLocaleDateString('de-DE'));return}}});
 addEventListener('dragover',e=>e.preventDefault());
-addEventListener('drop',async e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(!f)return;if(f.type.startsWith('image/'))addImage(await shrink(f));else if(f.type==='application/pdf')importPdf(f)});
+addEventListener('drop',async e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(!f)return;if(f.type.startsWith('image/')){const src=await shrink(f);addImage(src);window.__bilder&&window.__bilder.auto(src,f.name)}else if(f.type==='application/pdf')importPdf(f)});
 
 /* ---------- PDF importieren (pdf.js liegt lokal in lib/) ---------- */
 function loadScript(u){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=u;s.onload=res;s.onerror=()=>rej(new Error('Skript nicht erreichbar'));document.head.appendChild(s)})}
@@ -689,7 +689,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.tool){
     const id=t.dataset.tool;
     if(id==='shape'){const el=$('#shapepop');const open=!el.classList.contains('show');hideAllPops();el.classList.toggle('show',open);if(open)placePop(el,t);return}
-    if(id==='img'){hideAllPops();$('#fileImg').click();return}
+    if(id==='img'){hideAllPops();if(window.__bilder)window.__bilder.open();else $('#fileImg').click();return}
     tool=id;if(id!=='select')sel=null;hideAllPops();toolsUI();return}
   if(t.dataset.color){
     const c=t.dataset.color;
@@ -845,5 +845,6 @@ addEventListener('keydown',e=>{
 })();
 </script>
 <script src="widgets.js"></script>
+<script src="bilder.js"></script>
 </body>
 </html>

@@ -9,5 +9,6 @@ contextBridge.exposeInMainWorld('planer', {
   rueck: d => ipcRenderer.send('rueck:schreiben', d),
   tafelnListe: () => ipcRenderer.invoke('tafeln:liste'),
   tafelnOeffnen: f => ipcRenderer.invoke('tafeln:oeffnen', f),
-  tafelnOrdner: f => ipcRenderer.invoke('tafeln:ordner', f)
+  tafelnOrdner: f => ipcRenderer.invoke('tafeln:ordner', f),
+  bilder: (aktion, daten) => ipcRenderer.invoke('bilder', aktion, daten)
 });

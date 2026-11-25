@@ -150,6 +150,9 @@ const imTafelnOrdner = f => { const r = path.resolve(String(f)), root = path.res
 ipcMain.handle('tafeln:oeffnen', (e, f) => { if (!win || e.sender !== win.webContents) return null; const r = imTafelnOrdner(f); try { return r ? fs.readFileSync(r, 'utf8') : null; } catch (err) { return null; } });
 ipcMain.handle('tafeln:ordner', (e, f) => { if (!win || e.sender !== win.webContents) return false; const r = imTafelnOrdner(f); if (r) shell.showItemInFolder(r); return !!r; });
 
+// Bildersammlung: Dokumente\MeineTafel\Bilder\<Kategorie>\[<Unterkategorie>\]<Name>.<Endung>
+require('./bilder-speicher')(ipcMain, () => win, () => path.join(app.getPath('documents'), 'MeineTafel', 'Bilder'), shell);
+
 // Bildkarten (Ordner www/karten) als Data-URL liefern, damit sie ohne „tainted canvas“ auf die Tafel gelegt werden können
 ipcMain.handle('karte:lesen', (e, f) => {
   if (!win || e.sender !== win.webContents || !/^p\d{3}[a-z]?\.webp$/.test(String(f))) return null;
