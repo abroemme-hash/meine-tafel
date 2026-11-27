@@ -783,9 +783,11 @@ function buildRuler(){
   ruler.addEventListener('pointerup',()=>drag=null);
   ruler.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.r==='x')ruler.style.display='none';
     else if(b.dataset.r==='k'){
-      const m=prompt('Kalibrieren: Miss auf dem Board mit einem echten Lineal, wie lang die Skala von 0 bis 20 am Bildschirm-Lineal ist.\nWie viele Zentimeter sind es? (Soll: 20)',20);
-      const v=m==null?NaN:parseFloat(String(m).replace(',','.'));
-      if(v>2&&v<200){try{localStorage.setItem('tafel-pxmm',String(pxmmGet()*20/v))}catch(e){}buildRuler();window.__rebuildTri&&window.__rebuildTri();toast('Lineal kalibriert – bitte noch einmal nachmessen')}
+      // eigener Dialog: prompt() gibt es in der Windows-App nicht
+      window.__ask({titel:'Lineal kalibrieren',felder:[{label:'Miss mit einem echten Lineal die Skala von 0 bis 20 auf dem Board. Wie viele Zentimeter sind es? (Soll: 20)',wert:'20'}],ok:'Kalibrieren'}).then(m=>{
+        if(!m)return;const v=parseFloat(String(m[0]).replace(',','.'));
+        if(v>2&&v<200){try{localStorage.setItem('tafel-pxmm',String(pxmmGet()*20/v))}catch(e){}buildRuler();window.__rebuildTri&&window.__rebuildTri();toast('Lineal kalibriert – bitte noch einmal nachmessen')}
+        else toast('Bitte eine Zahl in Zentimetern eingeben',3500)});
     }
     else{rot+=+b.dataset.r;ruler.style.transform=`rotate(${rot}deg)`}});
 })();
@@ -796,11 +798,12 @@ const cur=$('#curtain');
 $('#cur').onclick=()=>{hideAllPops();cur.style.display=cur.style.display==='block'?'none':'block'};
 (function(){let d=false;const h=cur.querySelector('.h');
   h.addEventListener('pointerdown',e=>{d=true;h.setPointerCapture(e.pointerId);e.stopPropagation()});
-  h.addEventListener('pointermove',e=>{if(!d)return;const r=wrap.getBoundingClientRect();cur.style.height=Math.max(0,Math.min(r.height,e.clientY-r.top))+'px'});
+  h.addEventListener('pointermove',e=>{if(!d)return;const r=wrap.getBoundingClientRect(),k=r.height/wrap.offsetHeight||1;cur.style.height=Math.max(0,Math.min(wrap.offsetHeight,(e.clientY-r.top)/k))+'px'});   // k = Zoomfaktor
   h.addEventListener('pointerup',()=>d=false)})();
 
 /* Timer */
-function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)();[0,.35,.7].forEach(t=>{const o=a.createOscillator(),g=a.createGain();o.frequency.value=880;o.connect(g);g.connect(a.destination);g.gain.setValueAtTime(.25,a.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+t+.3);o.start(a.currentTime+t);o.stop(a.currentTime+t+.3)})}catch(e){}}
+function beep(){try{if(localStorage.getItem('tafel-ton')==='false')return}catch(e){}   // „Ton an“ in den Einstellungen gilt für alle Signale
+try{const a=new (window.AudioContext||window.webkitAudioContext)();[0,.35,.7].forEach(t=>{const o=a.createOscillator(),g=a.createGain();o.frequency.value=880;o.connect(g);g.connect(a.destination);g.gain.setValueAtTime(.25,a.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+t+.3);o.start(a.currentTime+t);o.stop(a.currentTime+t+.3)})}catch(e){}}
 // „Timer“ im Hilfsmittel-Menü öffnet die Zeit-Scheibe (ein gemeinsamer Timer)
 $('#tim').onclick=()=>{hideAllPops();const w=window.__widgets;if(w)w.openWidget(w.W.find(d=>d.id==='zeitscheibe'))};
 
@@ -821,7 +824,8 @@ function fit(){
 new ResizeObserver(fit).observe(stage);
 addEventListener('resize',()=>{fit();requestAnimationFrame(fit)});
 addEventListener('keydown',e=>{
-  if(e.target.tagName==='TEXTAREA')return;
+  // Beim Tippen in Eingabefeldern darf nichts auf der Tafel passieren (Rücktaste, Pfeile, Strg+Z); Esc bleibt wirksam
+  if(e.key!=='Escape'&&e.target.closest&&e.target.closest('input,textarea,select,[contenteditable="true"]'))return;
   const k=e.key.toLowerCase();
   if((e.ctrlKey||e.metaKey)&&k==='z'){e.preventDefault();e.shiftKey?redo():undo()}
   else if((e.ctrlKey||e.metaKey)&&k==='y'){e.preventDefault();redo()}

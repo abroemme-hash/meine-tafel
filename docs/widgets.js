@@ -4,7 +4,7 @@
 (() => {
 const store = {
   get(k, d) { try { const v = localStorage.getItem('tafel-' + k); return v == null ? d : JSON.parse(v) } catch (e) { return d } },
-  set(k, v) { try { localStorage.setItem('tafel-' + k, JSON.stringify(v)) } catch (e) {} }
+  set(k, v) { try { localStorage.setItem('tafel-' + k, JSON.stringify(v)); return true } catch (e) { return false } }
 };
 const h = html => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -428,9 +428,9 @@ function celebrate(name) {
     requestAnimationFrame(tick);
   })();
   // Melodie "Happy Birthday"
-  let ac; try {
+  let ac; if (store.get('ton', true) !== false) try {
     ac = new (window.AudioContext || window.webkitAudioContext)();
-    const N = [[0, .75], [0, .25], [2, 1], [0, 1], [5, 1], [4, 2], [0, .75], [0, .25], [2, 1], [0, 1], [7, 1], [5, 2], [0, .75], [0, .25], [12, 1], [9, 1], [5, 1], [4, 1], [2, 1], [10, .75], [10, .25], [9, 1], [5, 1], [7, 1], [5, 2]];
+    const N =[[0, .75], [0, .25], [2, 1], [0, 1], [5, 1], [4, 2], [0, .75], [0, .25], [2, 1], [0, 1], [7, 1], [5, 2], [0, .75], [0, .25], [12, 1], [9, 1], [5, 1], [4, 1], [2, 1], [10, .75], [10, .25], [9, 1], [5, 1], [7, 1], [5, 2]];
     let t = ac.currentTime + .1; const beat = .42;
     N.forEach(([s, d]) => { const o = ac.createOscillator(), gn = ac.createGain(); o.type = 'triangle'; o.frequency.value = 261.63 * Math.pow(2, s / 12); o.connect(gn); gn.connect(ac.destination); gn.gain.setValueAtTime(.0001, t); gn.gain.exponentialRampToValueAtTime(.28, t + .03); gn.gain.exponentialRampToValueAtTime(.001, t + d * beat * .95); o.start(t); o.stop(t + d * beat); t += d * beat });
   } catch (e) {}
@@ -904,8 +904,10 @@ buildGeo(); window.__rebuildTri = buildGeo;
   };
   window.__lens = dirtyFrame => { if (LS.on && (dirtyFrame || LS.dirty)) { LS.dirty = false; draw() } };
   let drag = null;
-  lens.addEventListener('pointerdown', e => { if (e.target.closest('.lt')) return; drag = { dx: e.clientX - (wrap.getBoundingClientRect().left + LS.cx), dy: e.clientY - (wrap.getBoundingClientRect().top + LS.cy) }; lens.setPointerCapture(e.pointerId); e.stopPropagation() });
-  lens.addEventListener('pointermove', e => { if (!drag) return; const r = wrap.getBoundingClientRect(); LS.cx = e.clientX - r.left - drag.dx; LS.cy = e.clientY - r.top - drag.dy; LS.dirty = true });
+  // Zeigerposition in Tafel-Maßen (berücksichtigt den Zoom)
+  const at = e => { const r = wrap.getBoundingClientRect(), k = r.width / wrap.offsetWidth || 1; return { x: (e.clientX - r.left) / k, y: (e.clientY - r.top) / k } };
+  lens.addEventListener('pointerdown', e => { if (e.target.closest('.lt')) return; const p = at(e); drag = { dx: p.x - LS.cx, dy: p.y - LS.cy }; lens.setPointerCapture(e.pointerId); e.stopPropagation() });
+  lens.addEventListener('pointermove', e => { if (!drag) return; const p = at(e); LS.cx = p.x - drag.dx; LS.cy = p.y - drag.dy; LS.dirty = true });
   lens.addEventListener('pointerup', () => drag = null); lens.addEventListener('pointercancel', () => drag = null);
   lens.querySelector('.lt').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return; const a = b.dataset.a;
@@ -1096,14 +1098,16 @@ add('zeichenfeld', '✏️', 'Zeichenfeld', 'Werkzeuge', b => {
 /* Meine Inhalte: eigene Texte und Bilder, immer griffbereit (nur auf diesem Gerät gespeichert) */
 add('inhalte', '📦', 'Meine Inhalte', 'Werkzeuge', b => {
   let C = store.get('inhalte', []);
+  // neuen Eintrag nur anzeigen, wenn er wirklich gespeichert wurde
+  const keep = x => { C.push(x); if (store.set('inhalte', C)) return true; C.pop(); toast('Speicher voll – nicht gespeichert. Bitte alte Einträge löschen oder Bilder in der Bildersammlung ablegen.', 6000); return false };
   const draw = () => {
     b.innerHTML = `<div class="row" style="margin-top:0"><input class="tx" placeholder="Text, z. B. Hausaufgabe, Regel …" style="flex:1;min-width:230px"><button class="ta">+ Text</button><button class="ti">+ Bild</button></div><div class="mi-g">${C.length ? C.map((x, i) => `<div class="mi-c" data-i="${i}">${x.t === 'img' ? `<img src="${x.d}" alt="">` : esc(x.d)}<span class="dx" data-del="${i}" title="Entfernen">×</span></div>`).join('') : '<div class="hint" style="grid-column:1/-1;margin:0">Noch nichts gespeichert. Antippen legt den Inhalt auf die Tafel.</div>'}</div>`;
     const tx = b.querySelector('.tx');
-    const addT = () => { const v = tx.value.trim(); if (!v) return; C.push({ t: 'txt', d: v }); store.set('inhalte', C); draw() };
+    const addT = () => { const v = tx.value.trim(); if (!v) return; if (keep({ t: 'txt', d: v })) draw() };
     b.querySelector('.ta').onclick = addT; tx.onkeydown = e => { if (e.key === 'Enter') addT() };
     b.querySelector('.ti').onclick = () => {
       const f = document.createElement('input'); f.type = 'file'; f.accept = 'image/*';
-      f.onchange = () => { const file = f.files[0]; if (!file) return; const fr = new FileReader(); fr.onload = () => { const im = new Image(); im.onload = () => { const s = Math.min(1, 900 / Math.max(im.width, im.height)), cv = document.createElement('canvas'); cv.width = Math.round(im.width * s); cv.height = Math.round(im.height * s); cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height); C.push({ t: 'img', d: cv.toDataURL('image/jpeg', .85) }); store.set('inhalte', C); draw() }; im.src = fr.result }; fr.readAsDataURL(file) };
+      f.onchange = () => { const file = f.files[0]; if (!file) return; const fr = new FileReader(); fr.onload = () => { const im = new Image(); im.onload = () => { const s = Math.min(1, 900 / Math.max(im.width, im.height)), cv = document.createElement('canvas'); cv.width = Math.round(im.width * s); cv.height = Math.round(im.height * s); cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height); if (keep({ t: 'img', d: cv.toDataURL('image/jpeg', .85) })) draw() }; im.src = fr.result }; fr.readAsDataURL(file) };
       f.click();
     };
     b.querySelectorAll('.mi-c').forEach(el => el.onclick = e => {
