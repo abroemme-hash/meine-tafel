@@ -1452,8 +1452,15 @@ html.barhid body.right #bar{transform:translateX(120%)}
     if (zz === 1 && handOn) { handOn = false; wr.classList.remove('hand'); fab.querySelector('.zh').classList.remove('on') }
   };
   const setZ = v => { zz = clamp(Math.round(v * 100) / 100, 1, 3); applyZ() };
-  fab.querySelector('.zi').onclick = () => setZ(zz + .25);
-  fab.querySelector('.zo').onclick = () => setZ(zz - .25);
+  // 5-%-Schritte; Taste gedrückt halten zoomt gleichmäßig weiter
+  for (const [cls, d] of [['.zi', .05], ['.zo', -.05]]) {
+    const k = fab.querySelector(cls); let warte = 0, takt = 0, gehalten = false;
+    const stop = () => { clearTimeout(warte); clearInterval(takt) };
+    k.addEventListener('pointerdown', () => { stop(); gehalten = false; warte = setTimeout(() => { gehalten = true; takt = setInterval(() => setZ(zz + d), 60) }, 350) });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => k.addEventListener(ev, stop));
+    k.addEventListener('contextmenu', e => e.preventDefault());
+    k.onclick = () => { stop(); if (!gehalten) setZ(zz + d); gehalten = false };
+  }
   fab.querySelector('.zv').onclick = () => setZ(1);
   fab.querySelector('.zh').onclick = () => { if (zz === 1) { setZ(1.5) } handOn = !handOn; wr.classList.toggle('hand', handOn); fab.querySelector('.zh').classList.toggle('on', handOn) };
   fab.querySelector('.bh').onclick = () => { const R = document.documentElement.classList, on = R.toggle('barhid'); const b = fab.querySelector('.bh'); b.textContent = on ? '⮝' : '⮟'; b.title = b.ariaLabel = on ? 'Leiste einblenden' : 'Leiste ausblenden'; if (on) document.querySelectorAll('.pop').forEach(p => p.classList.remove('show')) };
@@ -1468,7 +1475,7 @@ html.barhid body.right #bar{transform:translateX(120%)}
     wr.addEventListener('pointermove', mv); wr.addEventListener('pointerup', up); wr.addEventListener('pointercancel', up);
   }, true);
   // Strg + Mausrad zoomt
-  wr.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); setZ(zz + (e.deltaY < 0 ? .25 : -.25)) }, { passive: false });
+  wr.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); setZ(zz + (e.deltaY < 0 ? .05 : -.05)) }, { passive: false });
   window.__zoom = { set: setZ, get: () => zz };
 }
 
