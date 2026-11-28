@@ -4,6 +4,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('planer', {
   speichern: d => ipcRenderer.invoke('planer:speichern', d),
   karte: f => ipcRenderer.invoke('karte:lesen', f),
+  symbol: id => ipcRenderer.invoke('symbol:lesen', id),
   datei: f => ipcRenderer.invoke('planer:datei', f),
   paketLesen: () => ipcRenderer.invoke('paket:lesen'),
   rueck: d => ipcRenderer.send('rueck:schreiben', d),

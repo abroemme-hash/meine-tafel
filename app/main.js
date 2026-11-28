@@ -159,6 +159,12 @@ ipcMain.handle('karte:lesen', (e, f) => {
   try { return 'data:image/webp;base64,' + fs.readFileSync(path.join(__dirname, 'www', 'karten', f)).toString('base64'); } catch (err) { return null; }
 });
 
+// Symbole (Ordner www/symbole/m) als Data-URL liefern, aus demselben Grund wie die Bildkarten
+ipcMain.handle('symbol:lesen', (e, id) => {
+  if (!win || e.sender !== win.webContents || !/^\d{1,7}$/.test(String(id))) return null;
+  try { return 'data:image/svg+xml;base64,' + fs.readFileSync(path.join(__dirname, 'www', 'symbole', 'm', id + '.svg')).toString('base64'); } catch (err) { return null; }
+});
+
 // Dateien des Planers lesen: nur aus dem Austauschordner und dem Kartenordner des Planers, nur Bilder und PDF
 const MIME = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.pdf': 'application/pdf' };
 ipcMain.handle('paket:lesen', e => { if (!win || e.sender !== win.webContents) return null; try { return JSON.parse(readPaket() || 'null'); } catch (err) { return null; } });

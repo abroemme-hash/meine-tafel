@@ -328,6 +328,64 @@ function fallbackSymbole(b) {
   pick(0);
 }
 
+/* Symbole (Mulberry, CC BY-SA 4.0): nach Kategorien; Varianten mit heller und dunkler Haut stehen nebeneinander */
+let symLoad = null;
+const loadSymbole = () => symLoad || (symLoad = new Promise(res => {
+  if (window.SYMBOLE) return res(window.SYMBOLE);
+  const s = document.createElement('script'); s.src = 'symbole/symbole.js';
+  s.onload = () => res(window.SYMBOLE || null); s.onerror = () => res(null); document.head.appendChild(s);
+}));
+const symbolData = async id => {
+  if (window.planer && window.planer.symbol) { const d = await window.planer.symbol(id); if (d) return d }
+  const bl = await (await fetch('symbole/m/' + id + '.svg')).blob();
+  return await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(new Blob([bl], { type: 'image/svg+xml' })) });
+};
+function placeSymbol(id) {
+  symbolData(id).then(src => {
+    const im = new Image();
+    im.onload = () => {
+      const key = uid(), hh = 300, ww = hh * (im.naturalWidth / im.naturalHeight || 1), n = P().objs.filter(o => o.t === 'img').length % 8;
+      S.images[key] = src; imgCache[key] = im;
+      P().objs.push({ t: 'img', id: key, x: Math.min(W - ww - 20, 300 + n * 60), y: Math.min(H - hh - 20, 200 + n * 50), w: ww, h: hh });
+      sel = P().objs.length - 1; tool = 'select'; snap(); toolsUI();
+    };
+    im.onerror = () => toast('Symbol konnte nicht geladen werden', 3500);
+    im.src = src;
+  }).catch(() => toast('Symbol konnte nicht geladen werden', 3500));
+}
+add('mulberry', '🔣', 'Symbole', 'Deutsch', b => {
+  b.innerHTML = '<div class="hint" style="margin:0">Symbole werden geladen …</div>';
+  loadSymbole().then(D => {
+    if (!D) { b.innerHTML = '<div class="hint" style="margin:0;max-width:320px">Die Symbole sind in der Windows-App enthalten, nicht in der Internet-Version.</div>'; return }
+    let kat = Math.min(store.get('symbolkat', 0), D.kats.length - 1), max = 60;
+    b.innerHTML = `<style>.sm-g{display:grid;grid-template-columns:repeat(4,128px);gap:6px;max-height:420px;overflow-y:auto;touch-action:pan-y;margin-top:8px;align-content:start}.sm-t{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px;border-radius:14px;background:var(--w-soft);min-width:0}.sm-t.p{grid-column:span 2}.sm-t .im{display:flex;gap:6px;width:100%;justify-content:center}.sm-t .im button{padding:4px;min-width:0;min-height:0;width:104px;height:104px;border-radius:10px;background:#fff;border:0}.sm-t img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}.sm-t small{font-size:11.5px;line-height:1.2;text-align:center;overflow-wrap:anywhere}</style>
+<div class="row" style="margin-top:0"><select class="sk" style="min-width:230px">${D.kats.map((k, i) => `<option value="${i}">${esc(k)} (${D.items.filter(x => x[0] === i).reduce((n, x) => n + x[2].length, 0)})</option>`).join('')}</select><input class="sq" type="search" placeholder="Suchen, z. B. Apfel" style="flex:1;min-width:230px"></div>
+<div class="sm-g"></div><div class="row"><span class="lab sn"></span></div><div class="hint" style="max-width:530px">Antippen legt das Symbol auf die Tafel. Mulberry Symbols von Steve Lee, Lizenz CC BY-SA 4.0 (mulberrysymbols.org).</div>`;
+    const g = b.querySelector('.sm-g'), sk = b.querySelector('.sk'), sq = b.querySelector('.sq'), sn = b.querySelector('.sn');
+    sk.value = kat;
+    let list = [], shown = 0;
+    const norm = t => String(t).toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
+    const more = () => {
+      const part = list.slice(shown, shown + max); shown += part.length;
+      g.insertAdjacentHTML('beforeend', part.map(([, en, ids, name = en]) => `<div class="sm-t ${ids.length > 1 ? 'p' : ''}"><div class="im">${ids.map(id => `<button data-s="${id}" aria-label="${esc(name)}"><img loading="lazy" src="symbole/m/${id}.svg" alt=""></button>`).join('')}</div><small>${esc(name)}</small></div>`).join(''));
+      sn.textContent = list.length ? `${shown} von ${list.length}` : 'Nichts gefunden.';
+    };
+    const draw = () => {
+      const q = norm(sq.value.trim());   // Suche läuft über alle Kategorien, deutsch und englisch; Treffer am Wortanfang zuerst
+      if (q) {
+        const rang = x => { const d = norm(x[3] || x[1]); return d === q ? 0 : d.startsWith(q) ? 1 : (' ' + d).includes(' ' + q) ? 2 : 3 };
+        list = D.items.filter(x => norm((x[3] || '') + ' | ' + x[1]).includes(q)).sort((a, b) => rang(a) - rang(b));
+      } else list = D.items.filter(x => x[0] === kat);
+      shown = 0; g.innerHTML = ''; g.scrollTop = 0; more();
+    };
+    g.addEventListener('scroll', () => { if (shown < list.length && g.scrollTop + g.clientHeight > g.scrollHeight - 200) more() });
+    g.addEventListener('click', e => { const s = e.target.closest('[data-s]'); if (s) placeSymbol(s.dataset.s) });
+    sk.onchange = () => { kat = +sk.value; store.set('symbolkat', kat); sq.value = ''; draw() };
+    sq.oninput = draw;
+    draw();
+  });
+}, 1);
+
 /* Ampel */
 add('ampel', '🚦', 'Ampel', 'Klasse', b => {
   const L = [['#ef4444', 'Bitte nicht stören – ich arbeite gerade'], ['#f59e0b', 'Leise fragen oder kurz warten'], ['#22c55e', 'Ich bin ansprechbar']];
@@ -845,7 +903,7 @@ add('uhr', '🕒', 'Uhr', 'Material', b => {
   };
   let h = 3, m = 0, pm = false, h24 = false, task = null;
   let tk = ''; for (let i = 0; i < 60; i++) { const a = i * 6 * Math.PI / 180, r1 = i % 5 === 0 ? 100 : 105, x1 = 112 * Math.sin(a), y1 = -112 * Math.cos(a); tk += `<line x1="${r1 * Math.sin(a)}" y1="${-r1 * Math.cos(a)}" x2="${x1}" y2="${y1}" stroke="#334" stroke-width="${i % 5 === 0 ? 3 : 1.2}"/>` }
-  let nums = ''; for (let i = 1; i <= 12; i++) { const a = i * 30 * Math.PI / 180; nums += `<text x="${82 * Math.sin(a)}" y="${-82 * Math.cos(a) + 9}" font-size="26" font-weight="700" text-anchor="middle" fill="#112" font-family="Segoe UI,sans-serif">${i}</text>` }
+  let nums = ''; for (let i = 1; i <= 12; i++) { const a = i * 30 * Math.PI / 180; nums += `<text x="${82 * Math.sin(a)}" y="${-82 * Math.cos(a) + 9}" font-size="26" font-weight="700" text-anchor="middle" fill="#112" font-family="ABeeZee,sans-serif">${i}</text>` }
   b.innerHTML = `<div class="ur"><svg viewBox="-125 -125 250 250" width="270" height="270"><circle r="120" fill="#fff" stroke="#334" stroke-width="5"/>${tk}${nums}<line class="hh" x1="0" y1="0" x2="0" y2="-52" stroke="#c0182d" stroke-width="9" stroke-linecap="round"/><line class="mh" x1="0" y1="0" x2="0" y2="-88" stroke="#1b4fb8" stroke-width="6" stroke-linecap="round"/><circle r="7" fill="#223"/></svg></div><div class="ur-d"></div><div class="ur-w"></div><div class="row c"><button class="ap">Vormittag</button><button class="f24">24-Stunden</button><button class="wd">Wörter</button></div><div class="row c"><button class="big nw">🎲 Aufgabe</button><button class="ck">Prüfen</button></div>`;
   const svg = b.querySelector('svg'), hh = b.querySelector('.hh'), mh = b.querySelector('.mh'), dd = b.querySelector('.ur-d'), ww = b.querySelector('.ur-w');
   let showW = false;
@@ -1217,7 +1275,7 @@ const GRP = [
 ];
 const META = {
   phase: ['klasse', 'presentation'], dienste: ['klasse', 'userCheck'], murmeln: ['klasse', 'jar'], soundboard: ['hilfsmittel', 'music'], zeichenfeld: ['hilfsmittel', 'pencil'], inhalte: ['hilfsmittel', 'box'],
-  stunde: ['klasse', 'calendar'], symbole: ['klasse', 'images'], ampel: ['klasse', 'traffic'], punkte: ['klasse', 'trophy'], abstimmung: ['klasse', 'chart'], blitz: ['mathe', 'bolt'], geburtstag: ['klasse', 'cake'],
+  stunde: ['klasse', 'calendar'], symbole: ['klasse', 'images'], ampel: ['klasse', 'traffic'], punkte: ['klasse', 'trophy'], abstimmung: ['klasse', 'chart'], blitz: ['mathe', 'bolt'], mulberry: ['deutsch', 'images'], geburtstag: ['klasse', 'cake'],
   zufall: ['zufall', 'target'], gruppen: ['zufall', 'users'], wuerfel: ['zufall', 'dice'],
   zeitscheibe: ['zeit', 'hourglass'], stoppuhr: ['zeit', 'timer'], countdown: ['zeit', 'flag'], stundenplan: ['zeit', 'table'], uhr: ['zeit', 'clock'],
   zahlen: ['mathe', 'dots'], rechner: ['mathe', 'calc'],
@@ -1481,7 +1539,7 @@ async function fahrplanPage(tp) {
     const x = 100 + col * (colW + 60), y = top + r * rh, cy = y + rh / 2, c = FAHRPLAN_FARBEN[i % FAHRPLAN_FARBEN.length];
     // Nummer im farbigen Kreis
     const R = Math.min(50, rh / 2 - 12), ns = Math.round(R * 1.35);
-    MEASURE.font = `${ns}px "Segoe UI",Arial,sans-serif`; MEASURE.textBaseline = 'top'; MEASURE.textAlign = 'left';
+    MEASURE.font = `${ns}px "ABeeZee",sans-serif`; MEASURE.textBaseline = 'top'; MEASURE.textAlign = 'left';
     const mm = MEASURE.measureText(String(i + 1));   // tatsächliche Zeichenfläche der Ziffer messen, damit sie genau mittig sitzt
     objs.push({ t: 'ellipse', x1: x, y1: cy - R, x2: x + 2 * R, y2: cy + R, c, w: 9 });
     objs.push(TX(x + R - (mm.actualBoundingBoxRight - mm.actualBoundingBoxLeft) / 2, cy - (mm.actualBoundingBoxDescent - mm.actualBoundingBoxAscent) / 2, i + 1, ns, c));
