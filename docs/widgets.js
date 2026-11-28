@@ -393,21 +393,102 @@ add('punkte', '🏅', 'Punkte', 'Klasse', b => {
   draw();
 });
 
-/* Abstimmung */
-add('abstimmung', '🗳️', 'Abstimmung', 'Klasse', b => {
+/* Umfrage: eigene Frage, Vorlagen, verdecktes Ergebnis, auf die Tafel legen */
+add('abstimmung', '🗳️', 'Umfrage', 'Klasse', b => {
   const COL = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#a855f7'];
+  const VOR = [['Ja / Nein', ['Ja', 'Nein']], ['Daumen', ['👍 Gut', '👌 Geht so', '👎 Nicht gut']], ['Smileys', ['😀 Super', '🙂 Gut', '😐 Mittel', '🙁 Schwer']], ['1 – 5', ['1', '2', '3', '4', '5']], ['A B C D', ['A', 'B', 'C', 'D']]];
   let O = store.get('abstimmung', [{ n: 'Ja', c: 0 }, { n: 'Nein', c: 0 }]);
+  let frage = store.get('umfrage_frage', ''), hide = store.get('umfrage_verdeckt', false);
   const draw = () => {
     store.set('abstimmung', O);
-    const tot = O.reduce((a, o) => a + o.c, 0) || 1;
-    b.innerHTML = O.map((o, i) => `<div class="ab-r" style="--c:${COL[i]}"><input data-i="${i}" value="${esc(o.n)}"><div class="ab-b"><i style="width:${o.c / tot * 100}%"></i><b>${o.c}</b></div><button class="big" data-d="1" data-i="${i}">+</button><button data-d="-1" data-i="${i}">−</button></div>`).join('') + `<div class="row"><button class="ad">+ Antwort</button><button class="rm">− Antwort</button><button class="z">Zurücksetzen</button></div>`;
-    b.querySelectorAll('input').forEach(x => x.oninput = () => { O[+x.dataset.i].n = x.value; store.set('abstimmung', O) });
+    const tot = O.reduce((s, o) => s + o.c, 0);
+    b.innerHTML = `<input class="uf" placeholder="Frage, z. B. Wie war die Stunde?" value="${esc(frage)}" style="width:100%;min-width:380px;font-size:18px">
+<div class="row">${VOR.map(([n], i) => `<button data-v="${i}">${n}</button>`).join('')}</div>
+${O.map((o, i) => `<div class="ab-r" style="--c:${COL[i]}"><input data-i="${i}" value="${esc(o.n)}"><div class="ab-b"><i style="width:${hide ? 0 : o.c / (tot || 1) * 100}%"></i><b>${hide ? '?' : o.c}</b></div><button class="big" data-d="1" data-i="${i}" aria-label="Stimme für ${esc(o.n)}">+</button><button data-d="-1" data-i="${i}" aria-label="Stimme zurücknehmen">−</button></div>`).join('')}
+<div class="row"><span class="lab">Stimmen: <b>${tot}</b></span><button class="vd ${hide ? 'on' : ''}">${hide ? 'Ergebnis zeigen' : 'Ergebnis verdecken'}</button><button class="tf">Auf die Tafel</button></div>
+<div class="row"><button class="ad">+ Antwort</button><button class="rm">− Antwort</button><button class="z">Stimmen auf 0</button></div>`;
+    b.querySelector('.uf').oninput = e => { frage = e.target.value; store.set('umfrage_frage', frage) };
+    b.querySelectorAll('[data-v]').forEach(x => x.onclick = () => { O = VOR[+x.dataset.v][1].map(n => ({ n, c: 0 })); draw() });
+    b.querySelectorAll('input[data-i]').forEach(x => x.oninput = () => { O[+x.dataset.i].n = x.value; store.set('abstimmung', O) });
     b.querySelectorAll('[data-d]').forEach(x => x.onclick = () => { const o = O[+x.dataset.i]; o.c = Math.max(0, o.c + +x.dataset.d); draw() });
+    b.querySelector('.vd').onclick = () => { hide = !hide; store.set('umfrage_verdeckt', hide); draw() };
     b.querySelector('.ad').onclick = () => { if (O.length < 5) { O.push({ n: 'Antwort ' + (O.length + 1), c: 0 }); draw() } };
     b.querySelector('.rm').onclick = () => { if (O.length > 2) { O.pop(); draw() } };
     b.querySelector('.z').onclick = () => { O.forEach(o => o.c = 0); draw() };
+    b.querySelector('.tf').onclick = () => {
+      const max = Math.max(1, ...O.map(o => o.c));
+      let y = 170;
+      wrapText(frage || 'Umfrage', 46).forEach(l => { P().objs.push(TX(150, y, l, 64)); y += 82 });
+      y += 30;
+      O.forEach((o, i) => {
+        P().objs.push(TX(150, y, o.n, 48));
+        if (o.c) P().objs.push({ t: 'line', x1: 640, y1: y + 28, x2: 640 + o.c / max * 900, y2: y + 28, c: COL[i], w: 40 });
+        P().objs.push(TX(640 + o.c / max * 900 + 50, y, String(o.c), 48));
+        y += 96;
+      });
+      snap(); toast('Ergebnis liegt auf der Tafel');
+    };
   };
   draw();
+});
+
+/* Blitzrechnen: Kopfrechenaufgaben nacheinander, am Ende alle Lösungen */
+add('blitz', '⚡', 'Blitzrechnen', 'Klasse', b => {
+  const wb = h('<div class="br"></div>'); b.appendChild(wb);
+  let C = Object.assign({ art: '+', raum: 20, reihe: 0, n: 10, zeit: 5 }, store.get('blitz', {}));
+  let timer = 0, list = [], i = 0;
+  const rnd = (a, z) => a + Math.floor(Math.random() * (z - a + 1));
+  const stop = () => { clearTimeout(timer); timer = 0 };
+  const one = () => {
+    const art = C.art === 'mix' ? ['+', '−', '·', ':'][rnd(0, 3)] : C.art;
+    if (art === '+') { const x = rnd(1, C.raum - 1), y = rnd(1, C.raum - x); return [x + ' + ' + y, x + y] }
+    if (art === '−') { const x = rnd(2, C.raum), y = rnd(1, x - 1); return [x + ' − ' + y, x - y] }
+    const r = C.reihe || rnd(2, 10), f = rnd(1, 10);
+    return art === '·' ? [f + ' · ' + r, f * r] : [f * r + ' : ' + r, f];
+  };
+  const make = () => {
+    const L = [], seen = new Set();
+    for (let t = 0; L.length < C.n && t < 600; t++) { const a = one(); if (!seen.has(a[0])) { seen.add(a[0]); L.push(a) } }
+    while (L.length < C.n) L.push(one());   // kleiner Zahlenraum: Wiederholungen erlaubt
+    return L;
+  };
+  const sel = (k, label, opts) => `<label class="br-l"><span>${label}</span><select data-k="${k}">${opts.map(([v, n]) => `<option value="${v}" ${String(C[k]) === String(v) ? 'selected' : ''}>${n}</option>`).join('')}</select></label>`;
+  const setup = () => {
+    stop();
+    const mal = C.art === '·' || C.art === ':', mix = C.art === 'mix';
+    wb.innerHTML = `${sel('art', 'Rechenart', [['+', 'Plus'], ['−', 'Minus'], ['·', 'Mal'], [':', 'Geteilt'], ['mix', 'Gemischt']])}
+${mal ? '' : sel('raum', mix ? 'Zahlenraum (Plus/Minus)' : 'Zahlenraum', [[10, 'bis 10'], [20, 'bis 20'], [100, 'bis 100'], [1000, 'bis 1000']])}
+${mal || mix ? sel('reihe', 'Einmaleins-Reihe', [[0, 'alle'], ...[2, 3, 4, 5, 6, 7, 8, 9, 10].map(x => [x, x + 'er'])]) : ''}
+${sel('n', 'Aufgaben', [[5, '5'], [10, '10'], [15, '15'], [20, '20']])}
+${sel('zeit', 'Zeit je Aufgabe', [[2, '2 Sekunden'], [3, '3 Sekunden'], [5, '5 Sekunden'], [8, '8 Sekunden'], [12, '12 Sekunden'], [0, 'selbst weiterschalten']])}
+<div class="row c"><button class="big go">⚡ Los!</button></div>`;
+    wb.querySelectorAll('select').forEach(x => x.onchange = () => { C[x.dataset.k] = x.dataset.k === 'art' ? x.value : +x.value; store.set('blitz', C); setup() });
+    wb.querySelector('.go').onclick = () => { list = make(); i = 0; countdown(3) };
+  };
+  const countdown = k => { stop(); wb.innerHTML = `<div class="br-big">${k}</div>`; timer = setTimeout(() => k > 1 ? countdown(k - 1) : task(false), 800) };
+  const task = solved => {
+    stop();
+    const [q, a] = list[i];
+    wb.innerHTML = `<div class="br-st">Aufgabe ${i + 1} von ${list.length}</div><div class="br-big">${q} = <span class="br-a">${solved ? a : '?'}</span></div><div class="br-bar"><i></i></div><div class="row c"><button class="ab">Abbrechen</button><button class="big nx">${solved ? 'Weiter ➜' : 'Lösung'}</button></div>`;
+    const next = () => { if (!solved) { task(true); return } if (++i < list.length) task(false); else done() };
+    wb.querySelector('.nx').onclick = next;
+    wb.querySelector('.ab').onclick = setup;
+    if (C.zeit) {
+      const ms = solved ? 1600 : C.zeit * 1000, bar = wb.querySelector('.br-bar i');
+      if (!solved) { bar.style.transition = 'width ' + ms + 'ms linear'; requestAnimationFrame(() => requestAnimationFrame(() => bar.style.width = '0')) } else bar.style.width = '0';
+      timer = setTimeout(next, ms);
+    } else wb.querySelector('.br-bar').style.visibility = 'hidden';
+  };
+  const done = () => {
+    stop(); if (typeof beep === 'function') beep();
+    wb.innerHTML = `<div class="br-st">Geschafft! Hier sind alle Lösungen:</div><div class="br-all">${list.map(([q, a]) => `<div>${q} = <b>${a}</b></div>`).join('')}</div><div class="row c"><button class="nw">Einstellungen</button><button class="big ag">Noch einmal</button></div>`;
+    wb.querySelector('.nw').onclick = setup;
+    wb.querySelector('.ag').onclick = () => { list = make(); i = 0; countdown(3) };
+  };
+  const css3 = h('<style>.br{min-width:380px}.br-l{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;font-size:15px;font-weight:600}.br .br-l select{min-width:210px}.br-big{font-size:84px;font-weight:800;text-align:center;padding:26px 6px;font-variant-numeric:tabular-nums;white-space:nowrap;line-height:1.2}.br-a{color:var(--wa)}.br-st{text-align:center;color:var(--w-mute);font-weight:600}.br-bar{height:10px;border-radius:99px;background:var(--w-soft);overflow:hidden;margin-bottom:8px}.br-bar i{display:block;height:100%;width:100%;background:var(--wa)}.br-all{display:grid;grid-template-columns:1fr 1fr;gap:4px 26px;font-size:24px;margin:10px 4px;font-variant-numeric:tabular-nums}</style>');
+  b.appendChild(css3);
+  setup();
+  return stop;
 });
 
 /* Geburtstag */
@@ -1136,7 +1217,7 @@ const GRP = [
 ];
 const META = {
   phase: ['klasse', 'presentation'], dienste: ['klasse', 'userCheck'], murmeln: ['klasse', 'jar'], soundboard: ['hilfsmittel', 'music'], zeichenfeld: ['hilfsmittel', 'pencil'], inhalte: ['hilfsmittel', 'box'],
-  stunde: ['klasse', 'calendar'], symbole: ['klasse', 'images'], ampel: ['klasse', 'traffic'], punkte: ['klasse', 'trophy'], abstimmung: ['klasse', 'chart'], geburtstag: ['klasse', 'cake'],
+  stunde: ['klasse', 'calendar'], symbole: ['klasse', 'images'], ampel: ['klasse', 'traffic'], punkte: ['klasse', 'trophy'], abstimmung: ['klasse', 'chart'], blitz: ['mathe', 'bolt'], geburtstag: ['klasse', 'cake'],
   zufall: ['zufall', 'target'], gruppen: ['zufall', 'users'], wuerfel: ['zufall', 'dice'],
   zeitscheibe: ['zeit', 'hourglass'], stoppuhr: ['zeit', 'timer'], countdown: ['zeit', 'flag'], stundenplan: ['zeit', 'table'], uhr: ['zeit', 'clock'],
   zahlen: ['mathe', 'dots'], rechner: ['mathe', 'calc'],
@@ -1147,6 +1228,7 @@ const META = {
 WG.forEach(d => { const m = META[d.id]; if (m) { d.group = m[0]; d.icon = m[1] } else { d.group = d.group === 'Zeit' ? 'zeit' : 'hilfsmittel'; d.icon = 'layout' } });
 // Linien-Symbole (24×24, Strichstärke 2) – einheitlicher Stil
 Object.assign(WICONS, {
+  bolt: '<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',
   star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   shuffle: '<path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/>',
